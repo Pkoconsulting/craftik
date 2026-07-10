@@ -709,16 +709,21 @@
 <!-- ── API Key Banner ── -->
 <div id="api-banner">
   <label for="api-key-input">🔑 Clé API Anthropic :</label>
-  <div class="key-wrap">
+  <form class="key-wrap" id="key-form" autocomplete="on" onsubmit="return false" spellcheck="false">
+    <!-- Champ "identifiant" caché : aide iOS/Keychain & gestionnaires à enregistrer la clé comme un identifiant -->
+    <input type="text" name="craftik-account" value="Clé API Anthropic"
+           autocomplete="username" tabindex="-1" aria-hidden="true" readonly
+           style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none">
     <input
       type="password"
       id="api-key-input"
+      name="anthropic-api-key"
       placeholder="sk-ant-api03-..."
-      autocomplete="off"
+      autocomplete="current-password"
       spellcheck="false"
     />
     <button id="toggle-key" type="button" title="Afficher / masquer la clé" aria-label="Afficher ou masquer la clé">👁</button>
-  </div>
+  </form>
   <span id="key-status" style="color:var(--dim)">Non configurée</span>
   <span style="display:inline-flex;align-items:center;gap:8px">
     <span class="model-label">Modèle :</span>
@@ -730,7 +735,7 @@
   </span>
   <span class="key-hint">
     Clé sur <a href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com</a>
-    — stockée uniquement dans votre navigateur.
+    — stockée dans votre navigateur. 💡 Enregistrez-la dans votre Trousseau (iCloud Keychain) pour l'auto-remplir sur tous vos appareils.
   </span>
 </div>
 
@@ -1018,13 +1023,16 @@ const STORAGE_KEY = 'craftik_api_key';
 const savedKey = localStorage.getItem(STORAGE_KEY);
 if (savedKey) { apiKeyInput.value = savedKey; updateKeyStatus(savedKey); }
 
-apiKeyInput.addEventListener('input', () => {
+function persistKey() {
   const v = apiKeyInput.value.trim();
   if (v) localStorage.setItem(STORAGE_KEY, v);
   else localStorage.removeItem(STORAGE_KEY);
   updateKeyStatus(v);
   checkReady();
-});
+}
+// 'input' = frappe ; 'change' = auto-remplissage Trousseau iCloud / gestionnaire de mots de passe
+apiKeyInput.addEventListener('input', persistKey);
+apiKeyInput.addEventListener('change', persistKey);
 
 function updateKeyStatus(key) {
   if (key && key.startsWith('sk-ant-')) {
