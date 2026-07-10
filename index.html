@@ -1,0 +1,1828 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>CRAFTIK — Framework IA</title>
+<meta name="description" content="Posez n'importe quelle question — CRAFTIK la structure automatiquement avec les 7 dimensions du framework (Contexte, Rôle, Action, Format, Target, Interroge, Kaizen).">
+<meta name="theme-color" content="#0d0d0f">
+<meta name="color-scheme" content="dark light">
+<!-- Mobile / add-to-home-screen -->
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CRAFTIK">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.webmanifest">
+<!-- Open Graph (aperçu lors du partage du lien) -->
+<meta property="og:title" content="CRAFTIK — Framework IA">
+<meta property="og:description" content="Chaque réponse structurée avec les 7 dimensions du framework CRAFTIK.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0d0d0f;
+    --surface: #111115;
+    --surface2: #16161b;
+    --border: #1e1e24;
+    --border2: #252530;
+    --text: #e8e8e0;
+    --muted: #888;
+    --dim: #555;
+    --scroll: #333;
+    --shadow: rgba(0,0,0,0.5);
+    --headerbg: rgba(13,13,15,0.92);
+    --code-bg: #1e1e24;
+    --c: #FF6B35;
+    --r: #F7C948;
+    --a: #4CAF7D;
+    --f: #2196F3;
+    --t: #9C27B0;
+    --i: #E91E63;
+    --k: #00BCD4;
+  }
+  :root[data-theme="light"] {
+    --bg: #f6f6f4;
+    --surface: #ffffff;
+    --surface2: #fafaf8;
+    --border: #e6e6e0;
+    --border2: #d8d8d0;
+    --text: #1a1a1e;
+    --muted: #6a6a72;
+    --dim: #a2a2a8;
+    --scroll: #cfcfc7;
+    --shadow: rgba(0,0,0,0.08);
+    --headerbg: rgba(246,246,244,0.9);
+    --code-bg: #f0f0ea;
+    --a: #2f9c66;
+    --f: #1976D2;
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', system-ui, sans-serif;
+    min-height: 100vh;
+    line-height: 1.6;
+    transition: background 0.3s, color 0.3s;
+  }
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: var(--surface); }
+  ::-webkit-scrollbar-thumb { background: var(--scroll); border-radius: 3px; }
+
+  /* ── Header ── */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    position: sticky;
+    top: 0;
+    background: var(--headerbg);
+    backdrop-filter: blur(12px);
+    z-index: 100;
+  }
+  .logo-letters { display: flex; gap: 2px; }
+  .logo-letters span {
+    font-family: 'Playfair Display', serif;
+    font-weight: 900;
+    font-size: 22px;
+    line-height: 1;
+  }
+  .header-sub { font-size: 11px; color: var(--dim); letter-spacing: 2px; text-transform: uppercase; }
+  .header-tools { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .powered-badge {
+    font-size: 11px;
+    color: var(--muted);
+    background: var(--surface);
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--border2);
+    white-space: nowrap;
+  }
+  .powered-badge b { color: var(--text); font-weight: 600; }
+  .theme-toggle {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    color: var(--muted);
+    width: 34px; height: 34px;
+    border-radius: 9px;
+    font-size: 15px;
+    cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+  .theme-toggle:hover { border-color: var(--c); color: var(--c); }
+
+  /* ── API Key banner ── */
+  #api-banner {
+    background: linear-gradient(135deg, #FF6B3515, #F7C94810);
+    border-bottom: 1px solid #FF6B3530;
+    padding: 14px 32px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  #api-banner label { font-size: 13px; color: #aaa; white-space: nowrap; }
+  #api-key-input {
+    flex: 1;
+    min-width: 260px;
+    background: #0d0d0f;
+    border: 1px solid #FF6B3540;
+    border-radius: 8px;
+    padding: 8px 14px;
+    color: var(--text);
+    font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+    letter-spacing: 1px;
+  }
+  #api-key-input:focus { outline: none; border-color: #FF6B35; }
+  #api-key-input.valid { border-color: #4CAF7D; }
+  .key-wrap { flex: 1; min-width: 240px; position: relative; display: flex; }
+  .key-wrap #api-key-input { flex: 1; min-width: 0; padding-right: 40px; }
+  #toggle-key {
+    position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; color: var(--muted); cursor: pointer;
+    font-size: 15px; padding: 4px 6px; line-height: 1; border-radius: 6px;
+  }
+  #toggle-key:hover { color: var(--c); }
+  .key-hint { font-size: 11px; color: var(--muted); }
+  .key-hint a { color: #FF6B35; text-decoration: none; }
+  .key-hint a:hover { text-decoration: underline; }
+  #key-status { font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .model-select {
+    background: #0d0d0f;
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: var(--text);
+    font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+  }
+  :root[data-theme="light"] .model-select,
+  :root[data-theme="light"] #api-key-input { background: #fff; }
+  .model-select:focus { outline: none; border-color: var(--c); }
+  .model-label { font-size: 13px; color: var(--muted); white-space: nowrap; }
+
+  /* ── Main ── */
+  main { max-width: 880px; margin: 0 auto; padding: 44px 24px; }
+
+  /* Hero */
+  .hero { text-align: center; margin-bottom: 40px; }
+  .hero h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(28px, 5vw, 50px);
+    font-weight: 900;
+    line-height: 1.15;
+    margin-bottom: 14px;
+  }
+  .gradient-text {
+    background: linear-gradient(90deg, #FF6B35, #F7C948, #4CAF7D);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .hero p { color: var(--muted); font-size: 15px; max-width: 480px; margin: 0 auto; }
+
+  /* Framework pills */
+  .framework-pills {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 36px;
+  }
+  .pill {
+    background: var(--surface);
+    border-radius: 10px;
+    padding: 10px 14px;
+    text-align: center;
+    min-width: 88px;
+    transition: transform 0.2s;
+  }
+  .pill:hover { transform: translateY(-2px); }
+  .pill-letter { font-family: 'Playfair Display', serif; font-weight: 900; font-size: 22px; }
+  .pill-label { font-size: 10px; font-weight: 600; margin-top: 2px; }
+  .pill-desc { font-size: 9px; color: #555; margin-top: 2px; }
+
+  /* Input card */
+  .input-card {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 16px;
+    overflow: hidden;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 40px rgba(0,0,0,0.5);
+    transition: border-color 0.2s;
+  }
+  .input-card:focus-within { border-color: #FF6B3550; }
+  textarea {
+    width: 100%;
+    min-height: 120px;
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-size: 15px;
+    padding: 20px 24px;
+    resize: none;
+    font-family: 'DM Sans', sans-serif;
+    line-height: 1.7;
+  }
+  textarea:focus { outline: none; }
+  textarea::placeholder { color: #444; }
+  .input-footer {
+    border-top: 1px solid var(--border);
+    padding: 12px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .char-count { font-size: 12px; color: var(--dim); }
+
+  /* Buttons */
+  .btn-primary {
+    background: linear-gradient(135deg, #FF6B35, #F7C948);
+    color: #0d0d0f;
+    border: none;
+    padding: 12px 26px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .btn-primary:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(255,107,53,0.4); }
+  .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid var(--border2);
+    color: var(--muted);
+    padding: 11px 20px;
+    border-radius: 10px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .btn-ghost:hover { border-color: #FF6B35; color: #FF6B35; }
+
+  /* Examples */
+  .examples { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 44px; align-items: center; }
+  .examples-label { font-size: 12px; color: var(--dim); }
+  .example-chip {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    color: #888;
+    padding: 6px 13px;
+    border-radius: 20px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'DM Sans', sans-serif;
+    white-space: nowrap;
+  }
+  .example-chip:hover { border-color: #FF6B35; color: #FF6B35; background: rgba(255,107,53,0.06); }
+
+  /* Error */
+  .error-box {
+    background: rgba(255,107,53,0.08);
+    border: 1px solid rgba(255,107,53,0.3);
+    border-radius: 10px;
+    padding: 14px 18px;
+    color: #FF6B35;
+    font-size: 14px;
+    margin-bottom: 24px;
+    display: none;
+  }
+
+  /* Results */
+  #results { display: none; flex-direction: column; gap: 20px; }
+
+  .result-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(16px);
+    transition: all 0.5s ease;
+  }
+  .result-card.visible { opacity: 1; transform: translateY(0); }
+  .card-header {
+    padding: 15px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .card-title {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 15px;
+  }
+  .card-badge {
+    font-size: 11px;
+    color: #555;
+    background: var(--border2);
+    padding: 2px 9px;
+    border-radius: 20px;
+  }
+
+  /* CRAFTIK items */
+  .craftik-grid { padding: 16px 20px; display: flex; flex-direction: column; gap: 8px; }
+  .craftik-item {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 10px 14px;
+    border-radius: 0 8px 8px 0;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: all 0.35s ease;
+  }
+  .craftik-item.visible { opacity: 1; transform: translateY(0); }
+  .craftik-letter-badge {
+    font-family: 'Playfair Display', serif;
+    font-weight: 900;
+    font-size: 18px;
+    line-height: 1;
+    min-width: 16px;
+  }
+  .craftik-content { flex: 1; }
+  .craftik-key { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+  .craftik-val { font-size: 13px; color: #ccc; margin-top: 3px; line-height: 1.5; }
+
+  /* Tabs */
+  .tabs-header { padding: 12px 20px; border-bottom: 1px solid var(--border); display: flex; gap: 8px; }
+  .tab-btn {
+    padding: 8px 16px;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'DM Sans', sans-serif;
+    color: #888;
+    background: var(--border);
+  }
+  .tab-btn.active {
+    background: linear-gradient(135deg, #FF6B35, #F7C948);
+    color: #0d0d0f;
+  }
+  .tab-content { padding: 24px; font-size: 15px; line-height: 1.85; color: #ccc; white-space: pre-wrap; display: none; }
+  .tab-content.active { display: block; }
+
+  /* Loading dots */
+  .dots { display: inline-flex; gap: 4px; align-items: center; }
+  .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #0d0d0f;
+    animation: dotBounce 1.2s ease-in-out infinite;
+  }
+  .dot:nth-child(2) { animation-delay: 0.2s; }
+  .dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes dotBounce {
+    0%,80%,100% { transform: scale(0.5); opacity: 0.4; }
+    40% { transform: scale(1); opacity: 1; }
+  }
+
+  /* Footer */
+  footer {
+    text-align: center;
+    padding: 32px 24px;
+    color: #333;
+    font-size: 12px;
+    border-top: 1px solid var(--border);
+    margin-top: 40px;
+  }
+  footer a { color: #FF6B35; text-decoration: none; }
+
+  @media (max-width: 600px) {
+    header { padding: 12px 16px; flex-wrap: wrap; gap: 10px; }
+    .header-tools { gap: 8px; }
+    .powered-badge { font-size: 10px; padding: 3px 9px; }
+    main { padding: 28px 16px; }
+    #api-banner { padding: 12px 16px; gap: 10px; }
+    #api-banner label { width: 100%; }
+    .key-wrap { min-width: 100%; }
+    #api-banner .model-label { display: none; }
+    .framework-pills { flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start; padding-bottom: 6px; -webkit-overflow-scrolling: touch; }
+    .framework-pills::-webkit-scrollbar { height: 4px; }
+    .pill { min-width: 72px; padding: 8px 10px; flex-shrink: 0; }
+    .pill-letter { font-size: 18px; }
+    .examples { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; }
+  }
+
+  /* ── Markdown rendered content ── */
+  .md-content { padding: 20px 24px; color: #ccc; font-size: 14px; line-height: 1.85; }
+  .md-content h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 18px; font-weight: 700; color: var(--text);
+    margin: 22px 0 10px; padding-bottom: 6px;
+    border-bottom: 1px solid var(--border2);
+  }
+  .md-content h2 {
+    font-size: 15px; font-weight: 700; color: #FF6B35;
+    margin: 18px 0 7px;
+  }
+  .md-content h3 {
+    font-size: 13px; font-weight: 700; color: #F7C948;
+    margin: 12px 0 5px;
+  }
+  .md-content .hnum {
+    font-family: 'DM Sans', monospace;
+    opacity: 0.55;
+    font-weight: 400;
+    margin-right: 4px;
+    letter-spacing: 0.5px;
+  }
+  .md-content p  { margin: 0 0 10px; }
+  .md-content ul { margin: 6px 0 10px 20px; }
+  .md-content li { margin-bottom: 4px; }
+  .md-content strong { color: var(--text); font-weight: 600; }
+  .md-content em { color: #aaa; font-style: italic; }
+  .md-content code {
+    background: var(--code-bg); border: 1px solid var(--border2);
+    padding: 1px 6px; border-radius: 4px;
+    font-family: monospace; font-size: 12px; color: var(--a);
+  }
+  .md-content hr { border: none; border-top: 1px solid var(--border2); margin: 14px 0; }
+
+  /* ── Download button ── */
+  .dl-btn {
+    background: transparent;
+    border: 1px solid #333;
+    color: #555;
+    width: 26px; height: 26px;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+    margin-left: 6px;
+  }
+  .dl-btn:hover { border-color: #4CAF7D; color: #4CAF7D; background: rgba(76,175,125,0.08); }
+  .act-btn {
+    background: transparent;
+    border: 1px solid var(--border2);
+    color: var(--muted);
+    width: 26px; height: 26px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+    margin-left: 6px;
+  }
+  .act-btn:hover { border-color: var(--c); color: var(--c); background: rgba(255,107,53,0.08); }
+  .act-btn.copied { border-color: #4CAF7D; color: #4CAF7D; }
+
+  /* Stop button (shown during streaming) */
+  .btn-stop {
+    background: transparent;
+    border: 1px solid #FF6B3560;
+    color: #FF6B35;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.2s;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .btn-stop:hover { background: rgba(255,107,53,0.1); }
+
+  /* Streaming caret */
+  .stream-caret {
+    display: inline-block;
+    width: 8px; height: 1.05em;
+    background: var(--c);
+    margin-left: 2px;
+    vertical-align: text-bottom;
+    animation: caretBlink 1s step-end infinite;
+  }
+  @keyframes caretBlink { 50% { opacity: 0; } }
+
+  /* Restore banner */
+  #restore-banner {
+    max-width: 880px;
+    margin: 16px auto 0;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    padding: 12px 18px;
+    display: none;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  #restore-banner .rb-text { flex: 1; font-size: 13px; color: var(--muted); min-width: 180px; }
+  #restore-banner .rb-text b { color: var(--text); }
+
+  /* Streaming status pill inside CRAFTIK card */
+  .stream-status {
+    padding: 20px 24px;
+    font-size: 13px;
+    color: var(--muted);
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  .bubble-user {
+    display: flex;
+    justify-content: flex-end;
+    animation: fadeUp 0.3s ease;
+  }
+  .bubble-user-inner {
+    background: linear-gradient(135deg, #FF6B3522, #F7C94818);
+    border: 1px solid #FF6B3530;
+    border-radius: 16px 16px 4px 16px;
+    padding: 12px 18px;
+    max-width: 75%;
+    font-size: 14px;
+    color: #ddd;
+    line-height: 1.6;
+  }
+
+  .bubble-assistant {
+    display: flex;
+    justify-content: flex-start;
+    animation: fadeUp 0.3s ease;
+  }
+  .bubble-assistant-inner {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px 16px 16px 4px;
+    padding: 16px 20px;
+    max-width: 90%;
+    font-size: 14px;
+    color: #ccc;
+    line-height: 1.8;
+    white-space: pre-wrap;
+  }
+  .bubble-assistant-inner .bubble-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #FF6B35;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .bubble-loading .bubble-assistant-inner {
+    padding: 14px 20px;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Collapsible craftik */
+  #craftik-body {
+    overflow: hidden;
+    transition: max-height 0.4s ease;
+    max-height: 800px;
+  }
+  #craftik-body.collapsed { max-height: 0; }
+
+  /* Generic collapsible body */
+  .collapsible-body {
+    overflow: hidden;
+    transition: max-height 0.4s ease, opacity 0.3s ease;
+    max-height: 2000px;
+    opacity: 1;
+  }
+  .collapsible-body.collapsed {
+    max-height: 0;
+    opacity: 0;
+  }
+
+  .collapsible-header {
+    cursor: pointer;
+    user-select: none;
+  }
+  .collapsible-header:hover { background: rgba(255,255,255,0.02); }
+
+  .collapse-arrow {
+    margin-left: auto;
+    color: #555;
+    font-size: 12px;
+    transition: transform 0.3s;
+    flex-shrink: 0;
+  }
+
+  /* Follow-up exchange block */
+  .exchange-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    animation: fadeUp 0.35s ease;
+  }
+  .exchange-header {
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+  }
+  .exchange-header:hover { background: rgba(255,255,255,0.02); }
+  .exchange-question {
+    flex: 1;
+    font-size: 13px;
+    color: #aaa;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 70%;
+  }
+  .exchange-num {
+    font-size: 10px;
+    font-weight: 700;
+    color: #FF6B35;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .exchange-body {
+    overflow: hidden;
+    transition: max-height 0.4s ease, opacity 0.3s ease;
+    max-height: 2000px;
+    opacity: 1;
+  }
+  .exchange-body.collapsed {
+    max-height: 0;
+    opacity: 0;
+  }
+  .exchange-answer {
+    padding: 18px 20px;
+    font-size: 14px;
+    color: #ccc;
+    line-height: 1.8;
+    white-space: pre-wrap;
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<header>
+  <div class="logo-letters">
+    <span style="color:var(--c)">C</span>
+    <span style="color:var(--r)">R</span>
+    <span style="color:var(--a)">A</span>
+    <span style="color:var(--f)">F</span>
+    <span style="color:var(--t)">T</span>
+    <span style="color:var(--i)">I</span>
+    <span style="color:var(--k)">K</span>
+  </div>
+  <div>
+    <div class="header-sub">Framework IA</div>
+  </div>
+  <div class="header-tools">
+    <div class="powered-badge">Propulsé par <b id="badge-model">Claude</b></div>
+    <button class="theme-toggle" id="theme-toggle" title="Changer de thème" aria-label="Changer de thème">☀️</button>
+  </div>
+</header>
+
+<!-- ── API Key Banner ── -->
+<div id="api-banner">
+  <label for="api-key-input">🔑 Clé API Anthropic :</label>
+  <div class="key-wrap">
+    <input
+      type="password"
+      id="api-key-input"
+      placeholder="sk-ant-api03-..."
+      autocomplete="off"
+      spellcheck="false"
+    />
+    <button id="toggle-key" type="button" title="Afficher / masquer la clé" aria-label="Afficher ou masquer la clé">👁</button>
+  </div>
+  <span id="key-status" style="color:var(--dim)">Non configurée</span>
+  <span style="display:inline-flex;align-items:center;gap:8px">
+    <span class="model-label">Modèle :</span>
+    <select id="model-select" class="model-select" title="Choisir le modèle Claude">
+      <option value="claude-haiku-4-5-20251001">Haiku · rapide</option>
+      <option value="claude-sonnet-5">Sonnet · équilibré</option>
+      <option value="claude-opus-4-8">Opus · qualité max</option>
+    </select>
+  </span>
+  <span class="key-hint">
+    Clé sur <a href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com</a>
+    — stockée uniquement dans votre navigateur.
+  </span>
+</div>
+
+<!-- ── Restore last conversation banner ── -->
+<div id="restore-banner">
+  <span class="rb-text">💾 Une conversation précédente a été trouvée : <b id="restore-title"></b></span>
+  <button class="btn-primary" id="restore-btn" style="padding:8px 16px;font-size:13px">↩ Reprendre</button>
+  <button class="btn-ghost" id="restore-dismiss" style="padding:7px 14px;font-size:12px">Ignorer</button>
+</div>
+
+<!-- ── Main ── -->
+<main>
+
+  <!-- Hero -->
+  <div class="hero">
+    <h1>
+      Posez n'importe quelle question.<br>
+      <span class="gradient-text">CRAFTIK fait le reste.</span>
+    </h1>
+    <p>Chaque réponse est automatiquement structurée avec les 7 dimensions du framework CRAFTIK.</p>
+  </div>
+
+  <!-- Framework pills -->
+  <div class="framework-pills">
+    <div class="pill" style="border:1px solid rgba(255,107,53,0.2)">
+      <div class="pill-letter" style="color:var(--c)">C</div>
+      <div class="pill-label" style="color:var(--c)">Contexte</div>
+      <div class="pill-desc">Situation</div>
+    </div>
+    <div class="pill" style="border:1px solid rgba(247,201,72,0.2)">
+      <div class="pill-letter" style="color:var(--r)">R</div>
+      <div class="pill-label" style="color:var(--r)">Rôle</div>
+      <div class="pill-desc">Expert mobilisé</div>
+    </div>
+    <div class="pill" style="border:1px solid rgba(76,175,125,0.2)">
+      <div class="pill-letter" style="color:var(--a)">A</div>
+      <div class="pill-label" style="color:var(--a)">Action</div>
+      <div class="pill-desc">Production</div>
+    </div>
+    <div class="pill" style="border:1px solid rgba(33,150,243,0.2)">
+      <div class="pill-letter" style="color:var(--f)">F</div>
+      <div class="pill-label" style="color:var(--f)">Format</div>
+      <div class="pill-desc">Style & structure</div>
+    </div>
+    <div class="pill" style="border:1px solid rgba(156,39,176,0.2)">
+      <div class="pill-letter" style="color:var(--t)">T</div>
+      <div class="pill-label" style="color:var(--t)">Target</div>
+      <div class="pill-desc">Audience</div>
+    </div>
+    <div class="pill" style="border:1px solid rgba(233,30,99,0.2)">
+      <div class="pill-letter" style="color:var(--i)">I</div>
+      <div class="pill-label" style="color:var(--i)">Interroge</div>
+      <div class="pill-desc">Clarifications</div>
+    </div>
+    <div class="pill" style="border:1px solid rgba(0,188,212,0.2)">
+      <div class="pill-letter" style="color:var(--k)">K</div>
+      <div class="pill-label" style="color:var(--k)">Kaizen</div>
+      <div class="pill-desc">Amélioration</div>
+    </div>
+  </div>
+
+  <!-- Input -->
+  <div class="input-card">
+    <textarea
+      id="question-input"
+      placeholder="Écrivez votre question ici... (Ctrl+Entrée pour envoyer)"
+    ></textarea>
+    <div class="input-footer">
+      <span class="char-count"><span id="char-count">0</span> caractères</span>
+      <div style="display:flex;gap:8px">
+        <button class="btn-stop" id="stop-btn" style="display:none">◼ Stop</button>
+        <button class="btn-primary" id="submit-btn" disabled>
+          ✦ Appliquer CRAFTIK
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Examples -->
+  <div class="examples">
+    <span class="examples-label">Exemples :</span>
+    <button class="example-chip" onclick="setExample(this)">Comment optimiser mes emails professionnels ?</button>
+    <button class="example-chip" onclick="setExample(this)">Explique-moi le machine learning en 5 minutes</button>
+    <button class="example-chip" onclick="setExample(this)">Comment vendre un appartement rapidement ?</button>
+    <button class="example-chip" onclick="setExample(this)">Quelle stratégie pour apprendre le piano adulte ?</button>
+  </div>
+
+  <!-- Error -->
+  <div class="error-box" id="error-box"></div>
+
+  <!-- Results -->
+  <div id="results">
+
+    <!-- CRAFTIK Breakdown (collapsible) -->
+    <div class="result-card" id="card-craftik">
+      <div class="card-header" onclick="toggleCraftik()" style="cursor:pointer;user-select:none">
+        <span class="card-title" style="color:var(--c)">Framework CRAFTIK</span>
+        <span class="card-badge">appliqué à votre question</span>
+        <span id="craftik-toggle" style="margin-left:auto;color:#555;font-size:13px;transition:transform 0.3s">▲</span>
+      </div>
+      <div id="craftik-body">
+        <div class="craftik-grid" id="craftik-grid"></div>
+      </div>
+    </div>
+
+    <!-- First response card -->
+    <div class="result-card" id="card-response">
+      <div class="card-header collapsible-header" onclick="toggleCard('response-body', 'response-toggle')">
+        <span class="card-title" style="color:var(--a)">✦ Réponse CRAFTIK</span>
+        <span class="card-badge" id="response-preview" style="margin-right:auto"></span>
+        <button class="act-btn" onclick="event.stopPropagation();copyMainResponse(this)" title="Copier la réponse">⧉</button>
+        <button class="act-btn" onclick="event.stopPropagation();regenerate(this)" title="Régénérer la réponse">↻</button>
+        <button class="dl-btn" onclick="event.stopPropagation();dlMainResponse()" title="Télécharger en Word (.docx)">⤓</button>
+        <span id="response-toggle" class="collapse-arrow" style="margin-left:6px">▲</span>
+      </div>
+      <div id="response-body" class="collapsible-body">
+        <div class="tabs-header">
+          <button class="tab-btn active" onclick="switchTab('reponse', event)">✦ Réponse</button>
+          <button class="tab-btn" onclick="switchTab('kaizen', event)">⟳ Kaizen</button>
+        </div>
+        <div class="tab-content active md-content" id="tab-reponse"></div>
+        <div class="tab-content md-content" id="tab-kaizen"></div>
+      </div>
+    </div>
+
+    <!-- ── Conversation thread (follow-ups) ── -->
+    <div id="conversation-thread"></div>
+
+    <!-- ── Follow-up input ── -->
+    <div id="followup-zone" class="result-card" style="overflow:visible">
+      <div class="card-header">
+        <span style="font-size:13px;color:#888">💬 Continuer sur ce sujet</span>
+        <span class="card-badge" id="msg-counter">1 échange</span>
+      </div>
+      <div style="position:relative">
+        <textarea
+          id="followup-input"
+          placeholder="Posez une question complémentaire… (Ctrl+Entrée pour envoyer)"
+          style="width:100%;min-height:80px;background:transparent;border:none;color:var(--text);font-size:14px;padding:16px 20px 16px 20px;resize:none;font-family:'DM Sans',sans-serif;line-height:1.6"
+        ></textarea>
+        <div style="border-top:1px solid var(--border);padding:10px 16px;display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:11px;color:var(--dim)"><span id="followup-count">0</span> caractères</span>
+          <button class="btn-primary" id="followup-btn" style="padding:9px 20px;font-size:13px" disabled>
+            ↩ Envoyer
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reset -->
+    <div style="display:flex;justify-content:center;margin-top:4px;gap:12px;flex-wrap:wrap">
+      <button class="btn-ghost" onclick="dlFullConversation()" style="display:flex;align-items:center;gap:6px">⤓ Télécharger en Word (.docx)</button>
+      <button class="btn-ghost" onclick="resetApp()">✕ Nouvelle conversation</button>
+    </div>
+
+  </div>
+
+</main>
+
+<footer>
+  Application CRAFTIK — Framework Prompt Engineering &nbsp;·&nbsp;
+  <a href="https://console.anthropic.com" target="_blank">Anthropic Console</a>
+</footer>
+
+<script>
+const CRAFTIK_LETTERS = [
+  { letter: 'C', label: 'Contexte',  color: '#FF6B35' },
+  { letter: 'R', label: 'Rôle',      color: '#F7C948' },
+  { letter: 'A', label: 'Action',    color: '#4CAF7D' },
+  { letter: 'F', label: 'Format',    color: '#2196F3' },
+  { letter: 'T', label: 'Target',    color: '#9C27B0' },
+  { letter: 'I', label: 'Interroge', color: '#E91E63' },
+  { letter: 'K', label: 'Kaizen',    color: '#00BCD4' },
+];
+
+const SYSTEM_PROMPT_CRAFTIK = `Tu es un expert en prompt engineering qui applique le framework CRAFTIK à chaque question.
+
+Réponds UNIQUEMENT avec un objet JSON valide, sans texte avant ni après, sans balises markdown autour du JSON. Respecte ces règles strictes :
+- Pas de guillemets non échappés dans les valeurs
+- JSON complet et bien fermé
+- Les sauts de ligne dans les valeurs sont écrits \\n
+
+IMPORTANT : Les champs "reponse" et "amelioration" doivent utiliser une numérotation hiérarchique stricte :
+- 1. Titre du chapitre principal  (niveau 1)
+- 1.1 Titre du sous-chapitre      (niveau 2)
+- 1.1.1 Titre du point détaillé   (niveau 3)
+- **texte** pour le gras important
+- - pour les listes à puces (sous un niveau 3 si nécessaire)
+- Sépare chaque section par \\n\\n
+- La réponse doit avoir AU MINIMUM 2 chapitres de niveau 1, chacun avec au moins 2 sous-chapitres de niveau 2
+
+Exemple de structure :
+1. Préparation du terrain\\n\\n1.1 Analyse du sol\\n\\nContenu...\\n\\n1.1.1 Tests à réaliser\\n\\nContenu...\\n\\n1.2 Matériaux nécessaires\\n\\nContenu...\\n\\n2. Réalisation\\n\\n2.1 Étapes clés\\n\\nContenu...
+
+Structure JSON exacte :
+{"craftik":{"C":"contexte déduit","R":"rôle expert adopté","A":"action précise réalisée","F":"format longueur et style","T":"audience cible","I":"questions si besoin ou Aucune clarification nécessaire","K":"suggestion Kaizen concrète"},"reponse":"1. Titre\\n\\n1.1 Sous-titre\\n\\nContenu...","amelioration":"1. Amélioration principale\\n\\n1.1 Suggestion\\n\\nContenu..."}`;
+
+const SYSTEM_PROMPT_FOLLOWUP = `Tu es un expert qui continue une conversation déjà structurée avec le framework CRAFTIK. Le contexte, le rôle et l'audience ont déjà été définis — reste dans ce cadre.
+
+Réponds directement à la question de suivi en utilisant une numérotation hiérarchique :
+- 1. pour les chapitres principaux (au moins un)
+- 1.1 pour les sous-sections
+- 1.1.1 pour les points détaillés si nécessaire
+- **gras** pour les points importants
+- - pour les listes à puces
+- Sépare les sections par des lignes vides
+
+Réponse complète, claire et bien structurée.`;
+
+// ── State ──────────────────────────────────────────────
+const apiKeyInput   = document.getElementById('api-key-input');
+const keyStatus     = document.getElementById('key-status');
+const questionEl    = document.getElementById('question-input');
+const charCount     = document.getElementById('char-count');
+const submitBtn     = document.getElementById('submit-btn');
+const stopBtn       = document.getElementById('stop-btn');
+const errorBox      = document.getElementById('error-box');
+const results       = document.getElementById('results');
+const followupZone  = document.getElementById('followup-zone');
+const followupInput = document.getElementById('followup-input');
+const followupBtn   = document.getElementById('followup-btn');
+const followupCount = document.getElementById('followup-count');
+const thread        = document.getElementById('conversation-thread');
+const msgCounter    = document.getElementById('msg-counter');
+const modelSelect   = document.getElementById('model-select');
+const badgeModel    = document.getElementById('badge-model');
+const themeToggle   = document.getElementById('theme-toggle');
+const toggleKeyBtn  = document.getElementById('toggle-key');
+const restoreBanner = document.getElementById('restore-banner');
+
+// Conversation history for multi-turn
+let conversationHistory = [];
+let exchangeCount = 0;
+
+// Abort controller for the in-flight request
+let currentAbort = null;
+
+// Model registry (label shown on the "Propulsé par" badge)
+const MODEL_LABELS = {
+  'claude-haiku-4-5-20251001': 'Claude Haiku',
+  'claude-sonnet-5':           'Claude Sonnet',
+  'claude-opus-4-8':           'Claude Opus',
+};
+const DEFAULT_MODEL = 'claude-sonnet-5';
+
+// ── Model selection (persisted) ───────────────────────
+const MODEL_KEY = 'craftik_model';
+function currentModel() { return modelSelect.value || DEFAULT_MODEL; }
+function updateModelBadge() {
+  badgeModel.textContent = MODEL_LABELS[currentModel()] || 'Claude';
+}
+(function initModel() {
+  const saved = localStorage.getItem(MODEL_KEY);
+  modelSelect.value = (saved && MODEL_LABELS[saved]) ? saved : DEFAULT_MODEL;
+  updateModelBadge();
+})();
+modelSelect.addEventListener('change', () => {
+  localStorage.setItem(MODEL_KEY, modelSelect.value);
+  updateModelBadge();
+});
+
+// ── Theme (persisted, default dark) ───────────────────
+const THEME_KEY = 'craftik_theme';
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  themeToggle.textContent = theme === 'light' ? '🌙' : '☀️';
+  themeToggle.title = theme === 'light' ? 'Passer en mode sombre' : 'Passer en mode clair';
+}
+applyTheme(localStorage.getItem(THEME_KEY) || 'dark');
+themeToggle.addEventListener('click', () => {
+  const next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+  localStorage.setItem(THEME_KEY, next);
+  applyTheme(next);
+});
+
+// ── Show / hide API key ───────────────────────────────
+toggleKeyBtn.addEventListener('click', () => {
+  const showing = apiKeyInput.type === 'text';
+  apiKeyInput.type = showing ? 'password' : 'text';
+  toggleKeyBtn.textContent = showing ? '👁' : '🙈';
+});
+
+// ── Persist API key ───────────────────────────────────
+const STORAGE_KEY = 'craftik_api_key';
+const savedKey = localStorage.getItem(STORAGE_KEY);
+if (savedKey) { apiKeyInput.value = savedKey; updateKeyStatus(savedKey); }
+
+apiKeyInput.addEventListener('input', () => {
+  const v = apiKeyInput.value.trim();
+  if (v) localStorage.setItem(STORAGE_KEY, v);
+  else localStorage.removeItem(STORAGE_KEY);
+  updateKeyStatus(v);
+  checkReady();
+});
+
+function updateKeyStatus(key) {
+  if (key && key.startsWith('sk-ant-')) {
+    keyStatus.textContent = '✓ Clé valide';
+    keyStatus.style.color = '#4CAF7D';
+    apiKeyInput.classList.add('valid');
+  } else if (key) {
+    keyStatus.textContent = '⚠ Format inattendu';
+    keyStatus.style.color = '#F7C948';
+    apiKeyInput.classList.remove('valid');
+  } else {
+    keyStatus.textContent = 'Non configurée';
+    keyStatus.style.color = '#666';
+    apiKeyInput.classList.remove('valid');
+  }
+}
+
+// ── Main textarea ─────────────────────────────────────
+questionEl.addEventListener('input', () => {
+  charCount.textContent = questionEl.value.length;
+  checkReady();
+});
+questionEl.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+    e.preventDefault();
+    if (!submitBtn.disabled) handleSubmit();
+  }
+});
+
+function checkReady() {
+  const hasKey = apiKeyInput.value.trim().length > 10;
+  const hasQ   = questionEl.value.trim().length > 2;
+  submitBtn.disabled = !(hasKey && hasQ);
+}
+
+// ── Follow-up textarea ────────────────────────────────
+followupInput.addEventListener('input', () => {
+  followupCount.textContent = followupInput.value.length;
+  followupBtn.disabled = followupInput.value.trim().length < 2;
+});
+followupInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+    e.preventDefault();
+    if (!followupBtn.disabled) handleFollowup();
+  }
+});
+followupBtn.addEventListener('click', handleFollowup);
+
+// ── Examples ──────────────────────────────────────────
+function setExample(btn) {
+  questionEl.value = btn.textContent;
+  charCount.textContent = btn.textContent.length;
+  checkReady();
+  questionEl.focus();
+}
+
+// ── Collapsible toggle (generic) ─────────────────────
+function toggleCard(bodyId, arrowId) {
+  const body  = document.getElementById(bodyId);
+  const arrow = document.getElementById(arrowId);
+  if (!body) return;
+  const collapsed = body.classList.toggle('collapsed');
+  if (arrow) arrow.textContent = collapsed ? '▼' : '▲';
+}
+
+// Legacy alias for CRAFTIK card
+function toggleCraftik() { toggleCard('craftik-body', 'craftik-toggle'); }
+
+// ── Tabs ──────────────────────────────────────────────
+function switchTab(name, e) {
+  document.querySelectorAll('#card-response .tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('#card-response .tab-content').forEach(c => c.classList.remove('active'));
+  if (e) e.target.classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
+// ── Session persistence (localStorage) ────────────────
+const SESSION_KEY = 'craftik_session';
+
+function collectExchanges() {
+  return [...document.querySelectorAll('.exchange-block')].map(block => ({
+    num: block.dataset.num,
+    question: block.dataset.question || '',
+    answer: block.dataset.rawAnswer || block.querySelector('.exchange-answer')?.innerText || '',
+  }));
+}
+
+function saveSession() {
+  if (!_lastCraftikData) return;
+  try {
+    localStorage.setItem(SESSION_KEY, JSON.stringify({
+      question: _lastQuestion,
+      craftik: _lastCraftikData,
+      reponse: _lastReponse,
+      amelioration: _lastAmelioration,
+      history: conversationHistory,
+      exchanges: collectExchanges(),
+      savedAt: Date.now(),
+    }));
+  } catch (_) { /* quota — ignore */ }
+}
+
+function maybeShowRestore() {
+  let s;
+  try { s = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); } catch (_) { s = null; }
+  if (!s || !s.question) return;
+  document.getElementById('restore-title').textContent =
+    s.question.length > 60 ? s.question.slice(0, 60) + '…' : s.question;
+  restoreBanner.style.display = 'flex';
+}
+
+function restoreSession() {
+  let s;
+  try { s = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); } catch (_) { s = null; }
+  if (!s) return;
+
+  restoreBanner.style.display = 'none';
+  _lastQuestion       = s.question || '';
+  conversationHistory = s.history || [];
+  exchangeCount       = 1;
+
+  document.getElementById('card-response').style.display = '';
+  followupZone.style.display = '';
+  renderResult({ craftik: s.craftik, reponse: s.reponse, amelioration: s.amelioration });
+
+  // Rebuild follow-up exchange blocks
+  (s.exchanges || []).forEach(ex => {
+    appendBubble._pendingQuestion = ex.question;
+    const block = appendBubble('assistant', ex.answer);
+    if (block) { block.dataset.rawAnswer = ex.answer; block.dataset.num = ex.num; }
+    exchangeCount++;
+  });
+  appendBubble._pendingQuestion = null;
+
+  msgCounter.textContent = `${exchangeCount} échange${exchangeCount > 1 ? 's' : ''}`;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+document.getElementById('restore-btn').addEventListener('click', restoreSession);
+document.getElementById('restore-dismiss').addEventListener('click', () => {
+  restoreBanner.style.display = 'none';
+});
+maybeShowRestore();
+
+// ── Reset ─────────────────────────────────────────────
+function resetApp() {
+  questionEl.value = '';
+  charCount.textContent = '0';
+  results.style.display = 'none';
+  errorBox.style.display = 'none';
+  thread.innerHTML = '';
+  conversationHistory = [];
+  exchangeCount = 0;
+  bubbleIndex = 0;
+  _lastCraftikData = null; _lastQuestion = ''; _lastReponse = ''; _lastAmelioration = '';
+  appendBubble._pendingQuestion = null;
+  craftikOpen = true;
+  if (currentAbort) { currentAbort.abort(); currentAbort = null; }
+  setGenerating(false);
+  localStorage.removeItem(SESSION_KEY);
+  restoreBanner.style.display = 'none';
+  document.getElementById('card-response').style.display = '';
+  followupZone.style.display = '';
+  document.getElementById('craftik-body').classList.remove('collapsed');
+  if (document.getElementById('response-body')) document.getElementById('response-body').classList.remove('collapsed');
+  document.getElementById('craftik-toggle').textContent = '▲';
+  if (document.getElementById('response-toggle')) document.getElementById('response-toggle').textContent = '▲';
+  checkReady();
+  questionEl.focus();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── Streaming helper (SSE) ────────────────────────────
+// Calls the Messages API with stream:true and invokes onDelta(textChunk)
+// for every text delta. Resolves with the full accumulated text.
+async function streamMessage({ key, system, messages, onDelta, signal }) {
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: currentModel(),
+      max_tokens: 4096,
+      stream: true,
+      system,
+      messages,
+    }),
+    signal,
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    if (response.status === 401) throw new Error('Clé API invalide ou expirée. Vérifiez sur console.anthropic.com');
+    if (response.status === 429) throw new Error('Quota dépassé. Vérifiez votre plan Anthropic.');
+    if (response.status === 400 && /model/i.test(err?.error?.message || ''))
+      throw new Error('Modèle indisponible pour cette clé. Essayez un autre modèle.');
+    throw new Error(err?.error?.message || `Erreur HTTP ${response.status}`);
+  }
+
+  const reader  = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let full = '';
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+
+    // SSE events are separated by a blank line
+    const events = buffer.split('\n\n');
+    buffer = events.pop(); // keep the incomplete tail
+
+    for (const evt of events) {
+      const dataLine = evt.split('\n').find(l => l.startsWith('data:'));
+      if (!dataLine) continue;
+      const jsonStr = dataLine.slice(5).trim();
+      if (!jsonStr || jsonStr === '[DONE]') continue;
+      let payload;
+      try { payload = JSON.parse(jsonStr); } catch (_) { continue; }
+      if (payload.type === 'error') {
+        throw new Error(payload.error?.message || 'Erreur de streaming.');
+      }
+      if (payload.type === 'content_block_delta' && payload.delta?.type === 'text_delta') {
+        full += payload.delta.text;
+        if (onDelta) onDelta(payload.delta.text, full);
+      }
+    }
+  }
+  return full;
+}
+
+function setGenerating(on) {
+  if (on) {
+    submitBtn.style.display = 'none';
+    stopBtn.style.display = 'inline-flex';
+  } else {
+    submitBtn.style.display = 'inline-flex';
+    stopBtn.style.display = 'none';
+    currentAbort = null;
+  }
+}
+
+stopBtn.addEventListener('click', () => {
+  if (currentAbort) currentAbort.abort();
+});
+
+// ── First submit (CRAFTIK) ────────────────────────────
+submitBtn.addEventListener('click', handleSubmit);
+
+function handleSubmit() {
+  const question = questionEl.value.trim();
+  runCraftik(question);
+}
+
+async function runCraftik(question) {
+  const key = apiKeyInput.value.trim();
+  if (!key || !question) return;
+
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = '<span class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span> Analyse CRAFTIK…';
+  errorBox.style.display = 'none';
+  thread.innerHTML = '';
+  conversationHistory = [];
+  exchangeCount = 0;
+  _lastQuestion = question;
+
+  // Show the CRAFTIK card immediately with a live streaming status
+  const grid = document.getElementById('craftik-grid');
+  grid.innerHTML = '';
+  const statusEl = document.createElement('div');
+  statusEl.className = 'stream-status';
+  statusEl.innerHTML = '<span class="dots"><span class="dot" style="background:var(--c)"></span><span class="dot" style="background:var(--c)"></span><span class="dot" style="background:var(--c)"></span></span> <span id="stream-chars">Génération en cours…</span>';
+  grid.appendChild(statusEl);
+  document.getElementById('card-craftik').classList.add('visible');
+  document.getElementById('card-response').style.display = 'none';
+  followupZone.style.display = 'none';
+  results.style.display = 'flex';
+  setTimeout(() => results.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+
+  currentAbort = new AbortController();
+  setGenerating(true);
+
+  try {
+    const userMsg = { role: 'user', content: question };
+    const charsEl = document.getElementById('stream-chars');
+
+    const raw = await streamMessage({
+      key,
+      system: SYSTEM_PROMPT_CRAFTIK,
+      messages: [userMsg],
+      signal: currentAbort.signal,
+      onDelta: (_chunk, full) => {
+        if (charsEl) charsEl.textContent = `Structuration CRAFTIK… ${full.length} caractères reçus`;
+      },
+    });
+
+    const parsed = extractJSON(raw);
+
+    // Store in history (raw assistant JSON for context)
+    conversationHistory.push(userMsg);
+    conversationHistory.push({ role: 'assistant', content: raw });
+    exchangeCount = 1;
+
+    document.getElementById('card-response').style.display = '';
+    followupZone.style.display = '';
+    renderResult(parsed);
+    saveSession();
+
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      results.style.display = 'none';
+    } else {
+      results.style.display = 'none';
+      showError(err.message || 'Erreur inconnue.');
+    }
+  } finally {
+    setGenerating(false);
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = '✦ Appliquer CRAFTIK';
+    checkReady();
+  }
+}
+
+// ── Regenerate the first CRAFTIK response ─────────────
+function regenerate(btn) {
+  if (!_lastQuestion) return;
+  runCraftik(_lastQuestion);
+}
+
+// ── Follow-up ─────────────────────────────────────────
+async function handleFollowup() {
+  const key      = apiKeyInput.value.trim();
+  const question = followupInput.value.trim();
+  if (!key || !question) return;
+
+  followupBtn.disabled = true;
+  followupBtn.innerHTML = '<span class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>';
+  followupInput.value = '';
+  followupCount.textContent = '0';
+
+  // User bubble
+  appendBubble('user', question);
+
+  // Loading bubble
+  const loadingBubble = appendBubble('assistant', null, true);
+  const answerEl = loadingBubble.querySelector('.exchange-answer');
+
+  currentAbort = new AbortController();
+
+  try {
+    const userMsg = { role: 'user', content: question };
+    const messages = [...conversationHistory, userMsg];
+
+    const reply = await streamMessage({
+      key,
+      system: SYSTEM_PROMPT_FOLLOWUP,
+      messages,
+      signal: currentAbort.signal,
+      onDelta: (_chunk, full) => {
+        if (answerEl) {
+          answerEl.innerHTML = mdToHtml(full) + '<span class="stream-caret"></span>';
+          loadingBubble.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }
+      },
+    });
+
+    // Update history
+    conversationHistory.push(userMsg);
+    conversationHistory.push({ role: 'assistant', content: reply });
+    exchangeCount++;
+
+    if (answerEl) {
+      answerEl.innerHTML = mdToHtml(reply);   // final render, no caret
+      loadingBubble.dataset.rawAnswer = reply;
+    }
+
+    msgCounter.textContent = `${exchangeCount} échange${exchangeCount > 1 ? 's' : ''}`;
+    saveSession();
+
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      if (answerEl) answerEl.innerHTML = '<span style="color:var(--muted)">⏹ Génération interrompue.</span>';
+    } else if (answerEl) {
+      answerEl.innerHTML = `<span style="color:#FF6B35">⚠ ${escapeHtml(err.message)}</span>`;
+    }
+  } finally {
+    currentAbort = null;
+    followupBtn.disabled = false;
+    followupBtn.innerHTML = '↩ Envoyer';
+    followupInput.focus();
+    setTimeout(() => loadingBubble.scrollIntoView({ behavior: 'smooth', block: 'end' }), 100);
+  }
+}
+
+// ── Append a collapsible exchange block ───────────────
+let bubbleIndex = 0;
+function appendBubble(role, text, loading = false) {
+  if (role === 'user') {
+    appendBubble._pendingQuestion = text;
+    return null;
+  }
+
+  bubbleIndex++;
+  const idx     = bubbleIndex;
+  const qText   = appendBubble._pendingQuestion || '…';
+  const bodyId  = `exchange-body-${idx}`;
+  const arrowId = `exchange-arrow-${idx}`;
+  const dlId    = `exchange-dl-${idx}`;
+
+  const block = document.createElement('div');
+  block.className = 'exchange-block';
+  block.id = `exchange-${idx}`;
+  block.innerHTML = `
+    <div class="exchange-header" onclick="toggleExchange(${idx})">
+      <span class="exchange-num">Échange ${exchangeCount + 1}</span>
+      <span class="exchange-question">${escapeHtml(qText)}</span>
+      <button class="act-btn" onclick="event.stopPropagation();copyExchange(${idx}, this)" title="Copier">⧉</button>
+      <button id="${dlId}" class="dl-btn" onclick="event.stopPropagation();dlExchange(${idx})" title="Télécharger">⤓</button>
+      <span id="${arrowId}" class="collapse-arrow">▲</span>
+    </div>
+    <div class="exchange-body" id="${bodyId}">
+      <div class="exchange-answer md-content">
+        ${loading ? `<span class="dots"><span class="dot" style="background:#FF6B35"></span><span class="dot" style="background:#FF6B35"></span><span class="dot" style="background:#FF6B35"></span></span>` : mdToHtml(text)}
+      </div>
+    </div>`;
+
+  // Store raw text for download
+  block.dataset.question = qText;
+  block.dataset.num = exchangeCount + 1;
+
+  thread.appendChild(block);
+  setTimeout(() => block.scrollIntoView({ behavior: 'smooth', block: 'end' }), 50);
+  return block;
+}
+
+function toggleExchange(idx) {
+  const body  = document.getElementById(`exchange-body-${idx}`);
+  const arrow = document.getElementById(`exchange-arrow-${idx}`);
+  if (!body) return;
+  const collapsed = body.classList.toggle('collapsed');
+  if (arrow) arrow.textContent = collapsed ? '▼' : '▲';
+}
+
+function dlExchange(idx) {
+  const block = document.getElementById(`exchange-${idx}`);
+  if (!block) return;
+  const q   = block.dataset.question || '';
+  const num = block.dataset.num || idx;
+  const ans = block.dataset.rawAnswer || block.querySelector('.exchange-answer')?.innerText || '';
+  buildDocxBlob(`Échange ${num} — Suivi CRAFTIK`, q, null, [{heading:'Réponse', text:ans}])
+    .then(blob => triggerDownload(blob, `craftik-echange-${num}-${slugify(q)}.docx`))
+    .catch(e => alert('Erreur Word : ' + e.message));
+}
+
+// ── Copy to clipboard (with visual feedback) ──────────
+async function copyText(text, btn) {
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch (_) {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); } catch (_) {}
+    document.body.removeChild(ta);
+  }
+  if (btn) {
+    const prev = btn.textContent;
+    btn.textContent = '✓';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = prev; btn.classList.remove('copied'); }, 1400);
+  }
+}
+
+function copyMainResponse(btn) {
+  const active = document.querySelector('#card-response .tab-btn.active');
+  const isKaizen = active && /kaizen/i.test(active.textContent);
+  copyText(isKaizen ? _lastAmelioration : _lastReponse, btn);
+}
+
+function copyExchange(idx, btn) {
+  const block = document.getElementById(`exchange-${idx}`);
+  if (!block) return;
+  const ans = block.dataset.rawAnswer || block.querySelector('.exchange-answer')?.innerText || '';
+  copyText(ans, btn);
+}
+
+let _lastReponse     = '';
+let _lastAmelioration = '';
+
+function dlMainResponse() {
+  buildDocxBlob('Réponse CRAFTIK', _lastQuestion, _lastCraftikData, [
+    {heading:'Réponse', text:_lastReponse},
+    {heading:'Kaizen — Amélioration', text:_lastAmelioration},
+  ]).then(blob => triggerDownload(blob, `craftik-${slugify(_lastQuestion)}.docx`))
+    .catch(e => alert('Erreur Word : ' + e.message));
+}
+
+function dlFullConversation() {
+  const sections = [
+    {heading:'Réponse principale', text:_lastReponse},
+    {heading:'Kaizen — Amélioration', text:_lastAmelioration},
+  ];
+  document.querySelectorAll('.exchange-block').forEach((block, i) => {
+    const q   = block.dataset.question || '';
+    const num = block.dataset.num || (i+2);
+    const ans = block.dataset.rawAnswer || block.querySelector('.exchange-answer')?.innerText || '';
+    sections.push({heading:`Échange ${num} — ${q.slice(0,50)}`, text:ans});
+  });
+  buildDocxBlob('Conversation CRAFTIK complète', _lastQuestion, _lastCraftikData, sections)
+    .then(blob => triggerDownload(blob, `craftik-conversation-${slugify(_lastQuestion)}.docx`))
+    .catch(e => alert('Erreur Word : ' + e.message));
+}
+// ── HTML renderer (numérotation 1. / 1.1 / 1.1.1) ────
+function mdToHtml(text) {
+  if (!text) return '';
+  const lines = text.split(/\n/);
+  let html = '';
+  let inUl = false;
+  const closeUl = () => { if (inUl) { html += '</ul>'; inUl = false; } };
+  const inline = (t) => t
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,'<em>$1</em>')
+    .replace(/`(.+?)`/g,'<code>$1</code>');
+  for (const l of lines) {
+    if (/^\d+\.\d+\.\d+\s+/.test(l)) {
+      closeUl();
+      const num = l.match(/^(\d+\.\d+\.\d+)/)[1];
+      const title = l.replace(/^\d+\.\d+\.\d+\s+/,'');
+      html += `<h3><span class="hnum">${num}</span> ${inline(title)}</h3>`;
+    } else if (/^\d+\.\d+\s+/.test(l) && !/^\d+\.\d+\.\d+/.test(l)) {
+      closeUl();
+      const num = l.match(/^(\d+\.\d+)/)[1];
+      const title = l.replace(/^\d+\.\d+\s+/,'');
+      html += `<h2><span class="hnum">${num}</span> ${inline(title)}</h2>`;
+    } else if (/^\d+\.\s+\S/.test(l) && !/^\d+\.\d+/.test(l)) {
+      closeUl();
+      const num = l.match(/^(\d+)/)[1];
+      const title = l.replace(/^\d+\.\s+/,'');
+      html += `<h1><span class="hnum">${num}.</span> ${inline(title)}</h1>`;
+    } else if (/^[-*]\s+/.test(l)) {
+      if (!inUl) { html += '<ul>'; inUl = true; }
+      html += `<li>${inline(l.replace(/^[-*]\s+/,''))}</li>`;
+    } else if (/^---+$/.test(l)) {
+      closeUl(); html += '<hr>';
+    } else if (!l.trim()) {
+      closeUl();
+    } else {
+      closeUl();
+      html += `<p>${inline(l)}</p>`;
+    }
+  }
+  closeUl();
+  return html;
+}
+
+// ── Parse text → structured items for docx ────────────
+function parseItems(text) {
+  const items = [];
+  for (const l of (text||'').split(/\n/)) {
+    if (!l.trim()) continue;
+    if (/^\d+\.\d+\.\d+\s+/.test(l))
+      items.push({type:'h3', num:l.match(/^(\d+\.\d+\.\d+)/)[1], txt:l.replace(/^\d+\.\d+\.\d+\s+/,'')});
+    else if (/^\d+\.\d+\s+/.test(l) && !/^\d+\.\d+\.\d+/.test(l))
+      items.push({type:'h2', num:l.match(/^(\d+\.\d+)/)[1], txt:l.replace(/^\d+\.\d+\s+/,'')});
+    else if (/^\d+\.\s+\S/.test(l) && !/^\d+\.\d+/.test(l))
+      items.push({type:'h1', num:l.match(/^(\d+)/)[1]+'.', txt:l.replace(/^\d+\.\s+/,'')});
+    else if (/^[-*]\s+/.test(l))
+      items.push({type:'bullet', txt:l.replace(/^[-*]\s+/,'')});
+    else
+      items.push({type:'para', txt:l});
+  }
+  return items;
+}
+
+// ── Inline bold/italic → docx TextRun[] ──────────────
+function inlineRuns(text) {
+  const { TextRun } = window.docx;
+  const runs = [];
+  const parts = (text||'').split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
+  for (const p of parts) {
+    if (!p) continue;
+    if (p.startsWith('**')) runs.push(new TextRun({text:p.slice(2,-2), bold:true}));
+    else if (p.startsWith('*')) runs.push(new TextRun({text:p.slice(1,-1), italics:true}));
+    else runs.push(new TextRun({text:p}));
+  }
+  return runs.length ? runs : [new TextRun({text:''})];
+}
+
+// ── Convert text → docx Paragraph[] ─────────────────
+function textToDocxParas(text) {
+  const {Paragraph, HeadingLevel, AlignmentType, LevelFormat} = window.docx;
+  return parseItems(text).map(item => {
+    if (item.type==='h1') return new Paragraph({heading:HeadingLevel.HEADING_1, children:inlineRuns(`${item.num} ${item.txt}`)});
+    if (item.type==='h2') return new Paragraph({heading:HeadingLevel.HEADING_2, children:inlineRuns(`${item.num} ${item.txt}`)});
+    if (item.type==='h3') return new Paragraph({heading:HeadingLevel.HEADING_3, children:inlineRuns(`${item.num} ${item.txt}`)});
+    if (item.type==='bullet') return new Paragraph({numbering:{reference:'bullets',level:0}, children:inlineRuns(item.txt)});
+    return new Paragraph({children:inlineRuns(item.txt)});
+  });
+}
+
+// ── Build a complete .docx blob ───────────────────────
+async function buildDocxBlob(docTitle, question, craftikData, sections) {
+  const {
+    Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
+    HeadingLevel, AlignmentType, BorderStyle, WidthType, ShadingType,
+    LevelFormat, PageNumber, Footer
+  } = window.docx;
+
+  const date = new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
+  const children = [];
+
+  // Title
+  children.push(new Paragraph({heading:HeadingLevel.TITLE, children:[new TextRun({text:docTitle, bold:true})]}));
+  children.push(new Paragraph({children:[new TextRun({text:`Généré le ${date} — Application CRAFTIK`, italics:true, color:'888888', size:18})]}));
+  children.push(new Paragraph({children:[new TextRun({text:''})]}));
+
+  // Question
+  children.push(new Paragraph({heading:HeadingLevel.HEADING_1, children:[new TextRun('Question posée')]}));
+  children.push(new Paragraph({
+    children:[new TextRun({text: question||'', italics:true})],
+    indent:{left:720},
+    border:{left:{style:BorderStyle.THICK, size:6, color:'FF6B35', space:12}},
+  }));
+  children.push(new Paragraph({children:[new TextRun({text:''})]}));
+
+  // CRAFTIK table
+  if (craftikData) {
+    const labels={C:'Contexte',R:'Rôle',A:'Action',F:'Format',T:'Target',I:'Interroge',K:'Kaizen'};
+    const colors={C:'FF6B35',R:'F7C948',A:'4CAF7D',F:'2196F3',T:'9C27B0',I:'E91E63',K:'00BCD4'};
+    children.push(new Paragraph({heading:HeadingLevel.HEADING_1, children:[new TextRun('Cadre CRAFTIK')]}));
+    const b={style:BorderStyle.SINGLE,size:1,color:'DDDDDD'}, bs={top:b,bottom:b,left:b,right:b};
+    children.push(new Table({
+      width:{size:9026,type:WidthType.DXA}, columnWidths:[1600,7426],
+      rows:'CRAFTIK'.split('').map(l => new TableRow({children:[
+        new TableCell({borders:bs, width:{size:1600,type:WidthType.DXA},
+          shading:{fill:'F5F5F5',type:ShadingType.CLEAR},
+          margins:{top:80,bottom:80,left:160,right:120},
+          children:[new Paragraph({children:[
+            new TextRun({text:l+' ',bold:true,color:colors[l],size:24}),
+            new TextRun({text:labels[l],bold:true,size:20}),
+          ]})]}),
+        new TableCell({borders:bs, width:{size:7426,type:WidthType.DXA},
+          margins:{top:80,bottom:80,left:160,right:120},
+          children:[new Paragraph({children:inlineRuns(craftikData[l]||'—')})]}),
+      ]})),
+    }));
+    children.push(new Paragraph({children:[new TextRun({text:''})]}));
+  }
+
+  // Content sections
+  for (const s of sections) {
+    if (s.heading) children.push(new Paragraph({heading:HeadingLevel.HEADING_1, children:[new TextRun(s.heading)]}));
+    children.push(...textToDocxParas(s.text));
+    children.push(new Paragraph({children:[new TextRun({text:''})]}));
+  }
+
+  const doc = new Document({
+    styles:{
+      default:{document:{run:{font:'Arial',size:22}}},
+      paragraphStyles:[
+        {id:'Title',name:'Title',basedOn:'Normal',next:'Normal',
+          run:{size:52,bold:true,font:'Arial',color:'1A1A2E'},
+          paragraph:{spacing:{after:280}}},
+        {id:'Heading1',name:'Heading 1',basedOn:'Normal',next:'Normal',quickFormat:true,
+          run:{size:30,bold:true,font:'Arial',color:'CC4400'},
+          paragraph:{spacing:{before:320,after:160},outlineLevel:0,
+            border:{bottom:{style:BorderStyle.SINGLE,size:4,color:'DDDDDD',space:4}}}},
+        {id:'Heading2',name:'Heading 2',basedOn:'Normal',next:'Normal',quickFormat:true,
+          run:{size:26,bold:true,font:'Arial',color:'1A1A2E'},
+          paragraph:{spacing:{before:240,after:100},outlineLevel:1}},
+        {id:'Heading3',name:'Heading 3',basedOn:'Normal',next:'Normal',quickFormat:true,
+          run:{size:24,bold:false,font:'Arial',color:'995500'},
+          paragraph:{spacing:{before:160,after:60},outlineLevel:2}},
+      ],
+    },
+    numbering:{config:[{reference:'bullets',levels:[{
+      level:0,format:LevelFormat.BULLET,text:'•',alignment:AlignmentType.LEFT,
+      style:{paragraph:{indent:{left:720,hanging:360}}},
+    }]}]},
+    sections:[{
+      properties:{page:{size:{width:11906,height:16838},margin:{top:1440,right:1440,bottom:1440,left:1800}}},
+      footers:{default:new Footer({children:[new Paragraph({
+        alignment:AlignmentType.CENTER,
+        children:[new TextRun({text:'CRAFTIK  —  p. ',color:'AAAAAA',size:16}),
+                  new TextRun({children:[PageNumber.CURRENT],size:16,color:'AAAAAA'})],
+      })]})},
+      children,
+    }],
+  });
+  return await Packer.toBlob(doc);
+}
+
+// ── Slugify for filenames ─────────────────────────────
+function slugify(s) {
+  return (s||'').slice(0,35).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/gi,'-').toLowerCase();
+}
+
+// ── Trigger browser download ──────────────────────────
+function triggerDownload(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
+// ── Render first CRAFTIK result ───────────────────────
+let _lastCraftikData = null;
+let _lastQuestion    = '';
+
+function renderResult(data) {
+  _lastCraftikData  = data.craftik;
+  if (!_lastQuestion) _lastQuestion = questionEl.value.trim();
+  _lastReponse      = data.reponse      || '';
+  _lastAmelioration = data.amelioration || '';
+
+  // CRAFTIK grid
+  const grid = document.getElementById('craftik-grid');
+  grid.innerHTML = '';
+  CRAFTIK_LETTERS.forEach(({ letter, label, color }, i) => {
+    const val  = data.craftik?.[letter] || '—';
+    const item = document.createElement('div');
+    item.className = 'craftik-item';
+    item.style.background = color + '10';
+    item.style.borderLeft = `3px solid ${color}`;
+    item.innerHTML = `
+      <span class="craftik-letter-badge" style="color:${color}">${letter}</span>
+      <div class="craftik-content">
+        <div class="craftik-key" style="color:${color}">${label}</div>
+        <div class="craftik-val">${escapeHtml(val)}</div>
+      </div>`;
+    grid.appendChild(item);
+    setTimeout(() => item.classList.add('visible'), 80 + i * 70);
+  });
+
+  // Render markdown in tabs
+  document.getElementById('tab-reponse').innerHTML   = mdToHtml(data.reponse || '');
+  document.getElementById('tab-kaizen').innerHTML    = mdToHtml(data.amelioration || '');
+
+  // Preview text in header
+  const preview = (data.reponse || '').replace(/[#*`]/g,'').trim().slice(0, 65);
+  const previewEl = document.getElementById('response-preview');
+  if (previewEl) previewEl.textContent = preview + '…';
+
+  // Reset tabs
+  document.querySelectorAll('#card-response .tab-btn').forEach((b,i)  => b.classList.toggle('active', i===0));
+  document.querySelectorAll('#card-response .tab-content').forEach((c,i) => c.classList.toggle('active', i===0));
+
+  results.style.display = 'flex';
+  document.querySelectorAll('.result-card').forEach((c, i) =>
+    setTimeout(() => c.classList.add('visible'), 100 + i * 150));
+
+  msgCounter.textContent = '1 échange';
+  setTimeout(() => results.scrollIntoView({ behavior: 'smooth', block: 'start' }), 200);
+}
+
+// ── Helpers ───────────────────────────────────────────
+function showError(msg) {
+  errorBox.textContent = '⚠ ' + msg;
+  errorBox.style.display = 'block';
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function extractJSON(raw) {
+  let text = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
+  const start = text.indexOf('{');
+  const end   = text.lastIndexOf('}');
+  if (start === -1 || end === -1) throw new Error('Réponse inattendue de Claude. Réessayez.');
+  text = text.slice(start, end + 1);
+  try { return JSON.parse(text); } catch (_) {}
+  text = text.replace(/("(?:[^"\\]|\\.)*")|(\n)/g, (m, str, nl) => str ? str : ' ');
+  try { return JSON.parse(text); } catch (_) {}
+  const get = (key) => {
+    const rx = new RegExp(`"${key}"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"`, 's');
+    const m = text.match(rx);
+    return m ? m[1].replace(/\\n/g, '\n').replace(/\\"/g, '"') : '—';
+  };
+  const getObj = (key) => {
+    const rx = new RegExp(`"${key}"\\s*:\\s*\\{([^}]+)\\}`, 's');
+    const m = text.match(rx);
+    if (!m) return {};
+    const obj = {};
+    const inner = m[1];
+    const pairs = inner.matchAll(/"([A-Z])"\s*:\s*"((?:[^"\\]|\\.)*)"/gs);
+    for (const p of pairs) obj[p[1]] = p[2];
+    return obj;
+  };
+  return { craftik: getObj('craftik'), reponse: get('reponse'), amelioration: get('amelioration') };
+}
+</script>
+</body>
+</html>
