@@ -833,8 +833,9 @@
     <div class="result-card" id="card-craftik">
       <div class="card-header" onclick="toggleCraftik()" style="cursor:pointer;user-select:none">
         <span class="card-title" style="color:var(--c)">Framework CRAFTIK</span>
-        <span class="card-badge">appliqué à votre question</span>
-        <span id="craftik-toggle" style="margin-left:auto;color:#555;font-size:13px;transition:transform 0.3s">▲</span>
+        <span class="card-badge" style="margin-right:auto">appliqué à votre question</span>
+        <button class="act-btn" onclick="event.stopPropagation();copyCraftikPrompt(this)" title="Copier le prompt CRAFTIK">⧉</button>
+        <span id="craftik-toggle" style="margin-left:6px;color:#555;font-size:13px;transition:transform 0.3s">▲</span>
       </div>
       <div id="craftik-body">
         <div class="craftik-grid" id="craftik-grid"></div>
@@ -1522,6 +1523,26 @@ function copyExchange(idx, btn) {
   if (!block) return;
   const ans = block.dataset.rawAnswer || block.querySelector('.exchange-answer')?.innerText || '';
   copyText(ans, btn);
+}
+
+// ── Assemble the CRAFTIK dimensions into a reusable prompt ──
+function buildCraftikPrompt() {
+  const d = _lastCraftikData || {};
+  const labels = {
+    C: 'Contexte', R: 'Rôle', A: 'Action', F: 'Format',
+    T: 'Target (audience)', I: 'Interroge', K: 'Kaizen',
+  };
+  let out = 'Prompt structuré avec le framework CRAFTIK\n';
+  out += '════════════════════════════════════════\n\n';
+  ['C','R','A','F','T','I','K'].forEach(k => {
+    out += `${k} — ${labels[k]} : ${(d[k] || '—').trim()}\n\n`;
+  });
+  if (_lastQuestion) out += `Question : ${_lastQuestion}`;
+  return out.trim();
+}
+
+function copyCraftikPrompt(btn) {
+  copyText(buildCraftikPrompt(), btn);
 }
 
 let _lastReponse     = '';
