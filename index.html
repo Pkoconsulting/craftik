@@ -22,6 +22,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -578,6 +579,23 @@
     color: var(--text);
   }
   .modal-head span { flex: 1; }
+  /* Account / sync box inside the history modal */
+  .account-box { padding: 14px 16px; border-bottom: 1px solid var(--border); background: var(--surface2); }
+  .acct-title { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+  .acct-row { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+  .acct-input {
+    flex: 1; min-width: 130px;
+    background: var(--bg); border: 1px solid var(--border2); border-radius: 8px;
+    padding: 8px 12px; color: var(--text); font-size: 13px; font-family: 'DM Sans', sans-serif;
+  }
+  .acct-input:focus { outline: none; border-color: var(--c); }
+  .acct-btn { padding: 8px 14px; font-size: 13px; }
+  .acct-msg { font-size: 12px; min-height: 15px; line-height: 1.4; }
+  #acct-in { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .acct-connected { flex: 1; font-size: 13px; color: var(--text); min-width: 150px; }
+  .acct-connected b { color: var(--a); }
+  .acct-sync { color: var(--muted); font-size: 11px; }
+
   .history-list { overflow-y: auto; padding: 8px; flex: 1; }
   .history-empty { padding: 34px 20px; text-align: center; color: var(--muted); font-size: 13px; }
   .history-item {
@@ -1027,6 +1045,26 @@
       <span>🕘 Historique des requêtes</span>
       <button class="act-btn" onclick="closeHistory()" title="Fermer" style="margin:0">✕</button>
     </div>
+    <div id="account-box" class="account-box">
+      <!-- signed OUT -->
+      <div id="acct-out">
+        <div class="acct-title">☁️ Synchroniser l'historique sur tous mes appareils (optionnel)</div>
+        <div class="acct-row">
+          <input id="acct-email" type="email" placeholder="email" autocomplete="username" class="acct-input" spellcheck="false">
+          <input id="acct-pass" type="password" placeholder="mot de passe" autocomplete="current-password" class="acct-input">
+        </div>
+        <div class="acct-row">
+          <button class="btn-primary acct-btn" onclick="signIn()">Se connecter</button>
+          <button class="btn-ghost acct-btn" onclick="signUp()">Créer un compte</button>
+        </div>
+        <div id="acct-msg" class="acct-msg"></div>
+      </div>
+      <!-- signed IN -->
+      <div id="acct-in" style="display:none">
+        <span class="acct-connected">🟢 Connecté : <b id="acct-user"></b> <span id="acct-sync" class="acct-sync"></span></span>
+        <button class="btn-ghost acct-btn" onclick="signOut()">Déconnexion</button>
+      </div>
+    </div>
     <div id="history-list" class="history-list"></div>
     <div class="modal-foot">
       <button class="btn-ghost" id="history-clear" onclick="clearHistory()" style="padding:8px 16px;font-size:12px">🗑 Tout effacer</button>
@@ -1151,6 +1189,15 @@ let currentAbort = null;
 // Stable id of the current conversation (used for the history list)
 let currentSessionId = null;
 function genId() { return 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+// ── Supabase (optional account sync) ──────────────────
+// The anon key is public by design (RLS restricts each user to their own rows).
+const SUPABASE_URL  = 'https://zuxxvwfemmigvpxcgxsy.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp1eHh2d2ZlbW1pZ3ZweGNneHN5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3MTE5MzgsImV4cCI6MjA5OTI4NzkzOH0.V0zhOCZIUidZ-bK2l8VXfYS-V2im3rL0cuFpiOY4qlE';
+const sb = (window.supabase && window.supabase.createClient)
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON)
+  : null;
+let currentUser = null;
 
 // Model registry (label shown on the "Propulsé par" badge)
 const MODEL_LABELS = {
@@ -1318,6 +1365,7 @@ function saveSession() {
   const obj = currentSessionObject();
   try { localStorage.setItem(SESSION_KEY, JSON.stringify(obj)); } catch (_) { /* quota */ }
   upsertHistory(obj);
+  pushCloud(obj);
 }
 
 // ── Requests history (localStorage, hidden behind the 🕘 panel) ──
@@ -1398,6 +1446,7 @@ function restoreFromHistory(id) {
 function deleteHistoryItem(id, ev) {
   if (ev) ev.stopPropagation();
   saveHistory(loadHistory().filter(x => x.id !== id));
+  deleteCloud(id);
   updateHistoryBadge();
   renderHistoryList();
 }
@@ -1405,8 +1454,146 @@ function deleteHistoryItem(id, ev) {
 function clearHistory() {
   if (!confirm('Effacer tout l\'historique des requêtes ? Cette action est irréversible.')) return;
   localStorage.removeItem(HISTORY_KEY);
+  clearCloud();
   updateHistoryBadge();
   renderHistoryList();
+}
+
+// ── Account (optional) & cross-device sync via Supabase ──
+function acctMsg(text, ok) {
+  const el = document.getElementById('acct-msg');
+  if (!el) return;
+  el.textContent = text || '';
+  el.style.color = ok ? 'var(--a)' : '#FF6B35';
+}
+function setSyncStatus(text) {
+  const el = document.getElementById('acct-sync');
+  if (el) el.textContent = text ? '· ' + text : '';
+}
+function updateAccountUI() {
+  const out = document.getElementById('acct-out');
+  const inn = document.getElementById('acct-in');
+  if (!out || !inn) return;
+  if (currentUser) {
+    out.style.display = 'none'; inn.style.display = 'flex';
+    document.getElementById('acct-user').textContent = currentUser.email || '(compte)';
+  } else {
+    out.style.display = ''; inn.style.display = 'none';
+  }
+}
+
+async function signIn() {
+  if (!sb) { acctMsg('Synchronisation indisponible (bibliothèque non chargée).'); return; }
+  const email = document.getElementById('acct-email').value.trim();
+  const pass  = document.getElementById('acct-pass').value;
+  if (!email || !pass) { acctMsg('Email et mot de passe requis.'); return; }
+  acctMsg('Connexion…', true);
+  const { error } = await sb.auth.signInWithPassword({ email, password: pass });
+  if (error) {
+    acctMsg(/confirm/i.test(error.message)
+      ? 'Email non confirmé — cliquez le lien reçu par email, puis reconnectez-vous.'
+      : 'Erreur : ' + error.message);
+  } else {
+    acctMsg('');
+    document.getElementById('acct-pass').value = '';
+  }
+}
+
+async function signUp() {
+  if (!sb) { acctMsg('Synchronisation indisponible (bibliothèque non chargée).'); return; }
+  const email = document.getElementById('acct-email').value.trim();
+  const pass  = document.getElementById('acct-pass').value;
+  if (!email || pass.length < 6) { acctMsg('Email valide + mot de passe d\'au moins 6 caractères.'); return; }
+  acctMsg('Création du compte…', true);
+  const { data, error } = await sb.auth.signUp({ email, password: pass });
+  if (error) { acctMsg('Erreur : ' + error.message); return; }
+  if (data.session) acctMsg('Compte créé et connecté ✓', true);          // email confirmation OFF
+  else acctMsg('Compte créé ✓ Confirmez via l\'email reçu, puis « Se connecter ».', true); // confirmation ON
+}
+
+async function signOut() {
+  if (sb) { try { await sb.auth.signOut(); } catch (_) {} }
+  currentUser = null;
+  updateAccountUI();
+  acctMsg('');
+}
+
+// ── Sync helpers ──────────────────────────────────────
+function tsOf(e) { return (e && e.savedAt) ? e.savedAt : 0; }
+
+function mergeCloudIntoLocal(cloudEntries) {
+  const byId = {};
+  [...loadHistory(), ...cloudEntries].forEach(e => {
+    if (!e || !e.id) return;
+    const prev = byId[e.id];
+    if (!prev || tsOf(e) >= tsOf(prev)) byId[e.id] = e;
+  });
+  const merged = Object.values(byId).sort((a, b) => tsOf(b) - tsOf(a)).slice(0, HISTORY_MAX);
+  saveHistory(merged);
+  return merged;
+}
+
+async function pushCloud(obj) {
+  if (!sb || !currentUser || !obj || !obj.id) return;
+  try {
+    await sb.from('craftik_history').upsert({
+      user_id: currentUser.id,
+      session_id: obj.id,
+      question: obj.question || '',
+      payload: obj,
+      updated_at: new Date(obj.savedAt || Date.now()).toISOString(),
+    }, { onConflict: 'user_id,session_id' });
+  } catch (_) { /* keep local copy */ }
+}
+
+async function deleteCloud(id) {
+  if (!sb || !currentUser) return;
+  try { await sb.from('craftik_history').delete().eq('session_id', id); } catch (_) {}
+}
+async function clearCloud() {
+  if (!sb || !currentUser) return;
+  try { await sb.from('craftik_history').delete().eq('user_id', currentUser.id); } catch (_) {}
+}
+
+// Pull cloud history, merge locally, then push any local-only entries up
+async function syncPull() {
+  if (!sb || !currentUser) return;
+  setSyncStatus('sync…');
+  try {
+    const { data, error } = await sb.from('craftik_history')
+      .select('session_id, payload')
+      .order('updated_at', { ascending: false });
+    if (error) throw error;
+    const cloud = (data || []).map(r => Object.assign({}, r.payload, { id: r.session_id }));
+    mergeCloudIntoLocal(cloud);
+
+    // push entries that exist only locally
+    const cloudIds = new Set(cloud.map(e => e.id));
+    for (const e of loadHistory()) {
+      if (!cloudIds.has(e.id)) await pushCloud(e);
+    }
+
+    updateHistoryBadge();
+    if (document.getElementById('history-overlay').style.display === 'flex') renderHistoryList();
+    setSyncStatus('à jour ✓');
+  } catch (_) {
+    setSyncStatus('erreur sync');
+  }
+}
+
+function initAuth() {
+  if (!sb) { updateAccountUI(); return; }
+  sb.auth.onAuthStateChange((_event, session) => {
+    const wasUser = currentUser;
+    currentUser = (session && session.user) || null;
+    updateAccountUI();
+    if (currentUser && (!wasUser || wasUser.id !== currentUser.id)) syncPull();
+  });
+  sb.auth.getSession().then(({ data }) => {
+    currentUser = (data.session && data.session.user) || null;
+    updateAccountUI();
+    if (currentUser) syncPull();
+  }).catch(() => updateAccountUI());
 }
 
 function maybeShowRestore() {
@@ -1462,6 +1649,7 @@ document.getElementById('restore-dismiss').addEventListener('click', () => {
 });
 maybeShowRestore();
 updateHistoryBadge();
+initAuth();
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeHistory(); });
 
 // ── Reset ─────────────────────────────────────────────
