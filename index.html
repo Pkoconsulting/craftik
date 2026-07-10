@@ -545,6 +545,31 @@
     display: flex; align-items: center; gap: 10px;
   }
 
+  /* Prompt language selector */
+  .prompt-langbar {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    padding: 12px 22px;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px; color: var(--muted);
+  }
+  .lang-opt {
+    background: var(--border);
+    color: var(--muted);
+    border: none;
+    padding: 5px 12px;
+    border-radius: 7px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.2s;
+  }
+  .lang-opt:hover { color: var(--text); }
+  .lang-opt.active {
+    background: linear-gradient(135deg, #FF6B35, #F7C948);
+    color: #0d0d0f;
+    font-weight: 600;
+  }
+
   /* Reusable prompt box (raw, copy-ready text) */
   .prompt-box {
     margin: 0;
@@ -868,6 +893,11 @@
         <span id="prompt-toggle" class="collapse-arrow" style="margin-left:6px">▲</span>
       </div>
       <div id="prompt-body" class="collapsible-body">
+        <div class="prompt-langbar">
+          <span>🌐 Langue :</span>
+          <button type="button" class="lang-opt active" data-lang="auto" onclick="setPromptLang('auto')">Langue de la question</button>
+          <button type="button" class="lang-opt" data-lang="en" onclick="setPromptLang('en')">English</button>
+        </div>
         <div id="prompt-intro" style="padding:18px 22px;font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:14px;align-items:flex-start">
           <span>Génère un <b style="color:var(--text)">prompt complet et développé</b> — les 7 dimensions CRAFTIK détaillées, avec placeholders à compléter, instructions de raisonnement et variantes — prêt à coller dans n'importe quelle IA (ChatGPT, Claude, Gemini…).</span>
           <button class="btn-primary" id="prompt-gen-btn" onclick="generatePrompt()" style="padding:10px 20px;font-size:13px">✦ Générer le prompt détaillé</button>
@@ -984,7 +1014,7 @@ const SYSTEM_PROMPT_PROMPTGEN = `Tu es un expert en prompt engineering. À parti
 
 RÈGLES DE SORTIE :
 - Réponds UNIQUEMENT avec le prompt en Markdown. Aucune phrase d'introduction ni de conclusion, aucune explication, aucun bloc de code (pas de triple backticks), aucun JSON.
-- Rédige dans la MÊME LANGUE que la question de l'utilisateur.
+- La langue de sortie est précisée à la fin de ces instructions ; respecte-la strictement.
 - Le prompt s'adresse à une IA (« Tu es… », « Ta mission… ») et est écrit du point de vue de l'utilisateur final pour le Contexte (« Je suis… », « Je souhaite… »).
 
 STRUCTURE EXACTE À PRODUIRE :
@@ -1611,6 +1641,33 @@ function copyExchange(idx, btn) {
 let _lastPrompt  = '';
 let promptAbort  = null;
 
+// Target language for the generated prompt: 'auto' (question's language) or 'en'
+let _promptLang = localStorage.getItem('craftik_prompt_lang') || 'auto';
+
+function applyPromptLangUI() {
+  document.querySelectorAll('.lang-opt').forEach(b =>
+    b.classList.toggle('active', b.dataset.lang === _promptLang));
+}
+
+function setPromptLang(lang) {
+  const changed = lang !== _promptLang;
+  _promptLang = lang;
+  localStorage.setItem('craftik_prompt_lang', lang);
+  applyPromptLangUI();
+  // If a prompt already exists, regenerate it in the newly chosen language
+  if (changed && _lastPrompt && !promptAbort) generatePrompt();
+}
+
+function buildPromptSystem() {
+  const dir = _promptLang === 'en'
+    ? "LANGUE DE SORTIE : rédige l'INTÉGRALITÉ du prompt en ANGLAIS (English) — le titre, tout le contenu ET les intitulés de sections (## C — CONTEXT, ## R — ROLE, ## A — ACTION, ## F — FORMAT, ## T — TARGET, ## I — ASK, ## K — KAIZEN) — quelle que soit la langue de la question. Le placeholder devient [TO COMPLETE with my real data before sending: ...]."
+    : "LANGUE DE SORTIE : rédige le prompt dans la MÊME LANGUE que la question de l'utilisateur, avec les intitulés de sections en français (## C — CONTEXTE, ## R — RÔLE, ## A — ACTION, ## F — FORMAT, ## T — TARGET, ## I — INTERROGE, ## K — KAIZEN).";
+  return SYSTEM_PROMPT_PROMPTGEN + "\n\n" + dir;
+}
+
+// Reflect the persisted language choice in the UI (declared above is now initialized)
+applyPromptLangUI();
+
 function resetPromptCard() {
   _lastPrompt = '';
   if (promptAbort) { promptAbort.abort(); promptAbort = null; }
@@ -1646,7 +1703,7 @@ async function generatePrompt() {
   try {
     const full = await streamMessage({
       key,
-      system: SYSTEM_PROMPT_PROMPTGEN,
+      system: buildPromptSystem(),
       messages: [{ role: 'user', content: _lastQuestion }],
       signal: promptAbort.signal,
       onDelta: (_chunk, f) => { box.textContent = f; box.scrollTop = box.scrollHeight; },
