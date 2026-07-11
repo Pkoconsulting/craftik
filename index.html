@@ -591,6 +591,8 @@
   .acct-input:focus { outline: none; border-color: var(--c); }
   .acct-btn { padding: 8px 14px; font-size: 13px; }
   .acct-msg { font-size: 12px; min-height: 15px; line-height: 1.4; }
+  .acct-show { font-size: 12px; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; cursor: pointer; margin-bottom: 8px; }
+  .acct-show input { cursor: pointer; }
   #acct-in { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
   .acct-connected { flex: 1; font-size: 13px; color: var(--text); min-width: 150px; }
   .acct-connected b { color: var(--a); }
@@ -1057,12 +1059,23 @@
           <button class="btn-primary acct-btn" onclick="signIn()">Se connecter</button>
           <button class="btn-ghost acct-btn" onclick="signUp()">Créer un compte</button>
         </div>
+        <label class="acct-show"><input type="checkbox" onchange="document.getElementById('acct-pass').type=this.checked?'text':'password'"> afficher le mot de passe</label>
         <div id="acct-msg" class="acct-msg"></div>
       </div>
       <!-- signed IN -->
       <div id="acct-in" style="display:none">
         <span class="acct-connected">🟢 Connecté : <b id="acct-user"></b> <span id="acct-sync" class="acct-sync"></span></span>
+        <button class="btn-ghost acct-btn" onclick="toggleChangePass()">🔑 Mot de passe</button>
         <button class="btn-ghost acct-btn" onclick="signOut()">Déconnexion</button>
+      </div>
+      <!-- change password (when connected) -->
+      <div id="acct-changepass" style="display:none;margin-top:10px">
+        <div class="acct-title">Définir un mot de passe que vous choisissez (utilisable sur tous vos appareils) :</div>
+        <div class="acct-row">
+          <input id="acct-newpass" type="text" placeholder="nouveau mot de passe (6+ caractères)" class="acct-input" autocomplete="new-password">
+          <button class="btn-primary acct-btn" onclick="changePassword()">Enregistrer</button>
+        </div>
+        <div id="acct-cp-msg" class="acct-msg"></div>
       </div>
     </div>
     <div id="history-list" class="history-list"></div>
@@ -1516,6 +1529,24 @@ async function signOut() {
   currentUser = null;
   updateAccountUI();
   acctMsg('');
+}
+
+function toggleChangePass() {
+  const el = document.getElementById('acct-changepass');
+  el.style.display = (el.style.display === 'none' || !el.style.display) ? 'block' : 'none';
+}
+
+async function changePassword() {
+  const msg = document.getElementById('acct-cp-msg');
+  const set = (t, ok) => { msg.textContent = t; msg.style.color = ok ? 'var(--a)' : '#FF6B35'; };
+  if (!sb || !currentUser) { set('Vous devez être connecté.'); return; }
+  const np = document.getElementById('acct-newpass').value;
+  if (np.length < 6) { set('6 caractères minimum.'); return; }
+  set('Mise à jour…', true);
+  const { error } = await sb.auth.updateUser({ password: np });
+  if (error) { set('Erreur : ' + error.message); return; }
+  set('✓ Mot de passe mis à jour. Connectez-vous avec sur vos autres appareils.', true);
+  document.getElementById('acct-newpass').value = '';
 }
 
 // ── Sync helpers ──────────────────────────────────────
