@@ -120,6 +120,18 @@
     flex-shrink: 0;
   }
   .theme-toggle:hover { border-color: var(--c); color: var(--c); }
+  .header-account { display: flex; align-items: center; gap: 8px; }
+  .ha-email {
+    font-size: 12px; color: var(--muted);
+    max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .ha-email b { color: var(--text); font-weight: 600; }
+  .ha-login, .ha-logout {
+    background: var(--surface); border: 1px solid var(--border2); color: var(--muted);
+    padding: 6px 12px; border-radius: 8px; font-size: 12px; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; transition: all 0.2s; white-space: nowrap;
+  }
+  .ha-login:hover, .ha-logout:hover { border-color: var(--c); color: var(--c); }
 
   /* ── API Key banner ── */
   #api-banner {
@@ -816,7 +828,7 @@
     <div class="header-sub">Framework IA</div>
   </div>
   <div class="header-tools">
-    <div class="powered-badge">Propulsé par <b id="badge-model">Claude</b></div>
+    <div id="header-account" class="header-account"></div>
     <button class="theme-toggle" id="history-btn" title="Historique des requêtes" aria-label="Historique des requêtes" onclick="openHistory()" style="position:relative">🕘<span id="history-count" class="history-count" style="display:none"></span></button>
     <button class="theme-toggle" id="theme-toggle" title="Changer de thème" aria-label="Changer de thème">☀️</button>
   </div>
@@ -1224,7 +1236,7 @@ const DEFAULT_MODEL = 'claude-sonnet-5';
 const MODEL_KEY = 'craftik_model';
 function currentModel() { return modelSelect.value || DEFAULT_MODEL; }
 function updateModelBadge() {
-  badgeModel.textContent = MODEL_LABELS[currentModel()] || 'Claude';
+  if (badgeModel) badgeModel.textContent = MODEL_LABELS[currentModel()] || 'Claude';
 }
 (function initModel() {
   const saved = localStorage.getItem(MODEL_KEY);
@@ -1483,7 +1495,22 @@ function setSyncStatus(text) {
   const el = document.getElementById('acct-sync');
   if (el) el.textContent = text ? '· ' + text : '';
 }
+function updateHeaderAccount() {
+  const el = document.getElementById('header-account');
+  if (!el) return;
+  if (!sb) { el.innerHTML = ''; return; }
+  if (currentUser) {
+    const email = currentUser.email || 'compte';
+    el.innerHTML =
+      `<span class="ha-email" title="${escapeHtml(email)}">👤 <b>${escapeHtml(email)}</b></span>` +
+      `<button class="ha-logout" onclick="signOut()">Déconnexion</button>`;
+  } else {
+    el.innerHTML = `<button class="ha-login" onclick="openHistory()">Se connecter</button>`;
+  }
+}
+
 function updateAccountUI() {
+  updateHeaderAccount();
   const out = document.getElementById('acct-out');
   const inn = document.getElementById('acct-in');
   if (!out || !inn) return;
