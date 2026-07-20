@@ -259,6 +259,24 @@
     align-items: center;
   }
   .char-count { font-size: 12px; color: var(--dim); }
+  .attach-btn {
+    background: transparent; border: 1px solid var(--border2); color: var(--muted);
+    width: 34px; height: 34px; border-radius: 9px; font-size: 16px; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s;
+  }
+  .attach-btn:hover { border-color: var(--c); color: var(--c); }
+  .file-chip {
+    display: flex; align-items: center; gap: 8px;
+    margin: 0 20px 4px; padding: 8px 12px;
+    background: rgba(255,107,53,0.08); border: 1px solid rgba(255,107,53,0.25);
+    border-radius: 10px; font-size: 13px; color: var(--text); max-width: calc(100% - 40px);
+  }
+  .file-chip #file-chip-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .file-chip button {
+    background: transparent; border: none; color: var(--muted); cursor: pointer;
+    font-size: 13px; padding: 2px 6px; border-radius: 6px; flex-shrink: 0;
+  }
+  .file-chip button:hover { color: #FF6B35; }
 
   /* Buttons */
   .btn-primary {
@@ -931,8 +949,16 @@
       id="question-input"
       placeholder="Écrivez votre question ici... (Ctrl+Entrée pour envoyer)"
     ></textarea>
+    <div id="file-chip" class="file-chip" style="display:none">
+      <span id="file-chip-icon">📄</span>
+      <span id="file-chip-name"></span>
+      <button type="button" onclick="removeFile()" title="Retirer le fichier">✕</button>
+    </div>
     <div class="input-footer">
-      <span class="char-count"><span id="char-count">0</span> caractères</span>
+      <div style="display:flex;align-items:center;gap:12px">
+        <button type="button" class="attach-btn" onclick="document.getElementById('file-input').click()" title="Joindre un fichier (image, PDF, texte)">📎</button>
+        <span class="char-count"><span id="char-count">0</span> caractères</span>
+      </div>
       <div style="display:flex;gap:8px">
         <button class="btn-stop" id="stop-btn" style="display:none">◼ Stop</button>
         <button class="btn-primary" id="submit-btn" disabled>
@@ -940,6 +966,8 @@
         </button>
       </div>
     </div>
+    <input type="file" id="file-input" style="display:none"
+           accept="image/png,image/jpeg,image/webp,image/gif,application/pdf,text/*,.md,.csv,.json,.js,.ts,.py,.html,.css,.xml,.yml,.yaml">
   </div>
 
   <!-- Examples -->
@@ -1316,7 +1344,94 @@ questionEl.addEventListener('keydown', (e) => {
 function checkReady() {
   const hasKey = apiKeyInput.value.trim().length > 10;
   const hasQ   = questionEl.value.trim().length > 2;
-  submitBtn.disabled = !(hasKey && hasQ);
+  submitBtn.disabled = !(hasKey && (hasQ || !!attachedFile));
+}
+
+// ── Attached file (image / PDF / text) ────────────────
+let attachedFile = null;   // {name, kind:'image'|'pdf'|'text', mediaType?, data?, text?}
+const fileInput = document.getElementById('file-input');
+const MAX_FILE_BYTES = 5 * 1024 * 1024;   // 5 MB
+
+fileInput.addEventListener('change', handleFileSelect);
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload  = () => resolve(String(r.result).split(',')[1] || '');
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+}
+
+async function handleFileSelect(e) {
+  const f = e.target.files && e.target.files[0];
+  if (!f) return;
+  if (f.size > MAX_FILE_BYTES) {
+    showError('Fichier trop volumineux (max 5 Mo).');
+    fileInput.value = '';
+    return;
+  }
+  errorBox.style.display = 'none';
+  try {
+    if (f.type && f.type.startsWith('image/')) {
+      attachedFile = { name: f.name, kind: 'image', mediaType: f.type, data: await fileToBase64(f) };
+    } else if (f.type === 'application/pdf' || /\.pdf$/i.test(f.name)) {
+      attachedFile = { name: f.name, kind: 'pdf', mediaType: 'application/pdf', data: await fileToBase64(f) };
+    } else {
+      attachedFile = { name: f.name, kind: 'text', text: await f.text() };
+    }
+    showFileChip();
+    checkReady();
+  } catch (_) {
+    showError('Impossible de lire ce fichier.');
+  }
+  fileInput.value = '';   // allow re-selecting the same file later
+}
+
+function showFileChip() {
+  const chip = document.getElementById('file-chip');
+  const icon = { image: '🖼️', pdf: '📕', text: '📄' }[attachedFile.kind] || '📎';
+  document.getElementById('file-chip-icon').textContent = icon;
+  document.getElementById('file-chip-name').textContent = attachedFile.name;
+  chip.style.display = 'flex';
+}
+
+function removeFile() {
+  attachedFile = null;
+  document.getElementById('file-chip').style.display = 'none';
+  fileInput.value = '';
+  checkReady();
+}
+
+// Build the API "content" for the first user message (string, or blocks if a file is attached)
+function buildUserContent(question) {
+  if (!attachedFile) return question;
+  const blocks = [];
+  if (attachedFile.kind === 'image') {
+    blocks.push({ type: 'image', source: { type: 'base64', media_type: attachedFile.mediaType, data: attachedFile.data } });
+  } else if (attachedFile.kind === 'pdf') {
+    blocks.push({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: attachedFile.data } });
+  }
+  let q = question;
+  if (attachedFile.kind === 'text') {
+    q = `Fichier joint « ${attachedFile.name} » :\n\n${attachedFile.text}\n\n---\n\n${question}`;
+  }
+  blocks.push({ type: 'text', text: q });
+  return blocks;
+}
+
+// Strip heavy base64 (image/document) from history before persisting it
+function sanitizeHistoryForStorage(history) {
+  return (history || []).map(m => {
+    if (!m || !Array.isArray(m.content)) return m;
+    const content = m.content.map(b => {
+      if (b && (b.type === 'image' || b.type === 'document')) {
+        return { type: 'text', text: '[fichier joint — non conservé dans l\'historique]' };
+      }
+      return b;
+    });
+    return { role: m.role, content };
+  });
 }
 
 // ── Follow-up textarea ────────────────────────────────
@@ -1379,7 +1494,7 @@ function currentSessionObject() {
     reponse: _lastReponse,
     amelioration: _lastAmelioration,
     prompt: _lastPrompt,
-    history: conversationHistory,
+    history: sanitizeHistoryForStorage(conversationHistory),
     exchanges: collectExchanges(),
     savedAt: Date.now(),
   };
@@ -1726,6 +1841,7 @@ function resetApp() {
   if (currentAbort) { currentAbort.abort(); currentAbort = null; }
   setGenerating(false);
   resetPromptCard();
+  removeFile();
   currentSessionId = null;
   localStorage.removeItem(SESSION_KEY);   // history (craftik_history) is kept
   restoreBanner.style.display = 'none';
@@ -1824,7 +1940,8 @@ stopBtn.addEventListener('click', () => {
 submitBtn.addEventListener('click', handleSubmit);
 
 function handleSubmit() {
-  const question = questionEl.value.trim();
+  let question = questionEl.value.trim();
+  if (!question && attachedFile) question = 'Analyse le fichier joint : ' + attachedFile.name;
   runCraftik(question);
 }
 
@@ -1859,7 +1976,7 @@ async function runCraftik(question) {
   setGenerating(true);
 
   try {
-    const userMsg = { role: 'user', content: question };
+    const userMsg = { role: 'user', content: buildUserContent(question) };
     const charsEl = document.getElementById('stream-chars');
 
     const raw = await streamMessage({
@@ -1884,6 +2001,7 @@ async function runCraftik(question) {
     followupZone.style.display = '';
     renderResult(parsed);
     saveSession();
+    removeFile();   // clear the attachment from the input (it's kept in the conversation context)
 
   } catch (err) {
     if (err.name === 'AbortError') {
