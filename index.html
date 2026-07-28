@@ -265,13 +265,14 @@
     display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s;
   }
   .attach-btn:hover { border-color: var(--c); color: var(--c); }
+  .file-chips { display: none; flex-direction: column; gap: 6px; margin: 0 20px 4px; }
   .file-chip {
-    display: flex; align-items: center; gap: 8px;
-    margin: 0 20px 4px; padding: 8px 12px;
+    display: flex; align-items: center; gap: 8px; padding: 8px 12px;
     background: rgba(255,107,53,0.08); border: 1px solid rgba(255,107,53,0.25);
-    border-radius: 10px; font-size: 13px; color: var(--text); max-width: calc(100% - 40px);
+    border-radius: 10px; font-size: 13px; color: var(--text);
   }
-  .file-chip #file-chip-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .file-chip .fc-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .file-chip.busy { opacity: 0.7; font-style: italic; }
   .file-chip button {
     background: transparent; border: none; color: var(--muted); cursor: pointer;
     font-size: 13px; padding: 2px 6px; border-radius: 6px; flex-shrink: 0;
@@ -949,11 +950,7 @@
       id="question-input"
       placeholder="Écrivez votre question ici... (Ctrl+Entrée pour envoyer)"
     ></textarea>
-    <div id="file-chip" class="file-chip" style="display:none">
-      <span id="file-chip-icon">📄</span>
-      <span id="file-chip-name"></span>
-      <button type="button" onclick="removeFile()" title="Retirer le fichier">✕</button>
-    </div>
+    <div id="file-chips" class="file-chips"></div>
     <div class="input-footer">
       <div style="display:flex;align-items:center;gap:12px">
         <button type="button" class="attach-btn" onclick="document.getElementById('file-input').click()" title="Joindre un fichier (image, PDF, texte)">📎</button>
@@ -966,7 +963,7 @@
         </button>
       </div>
     </div>
-    <input type="file" id="file-input" style="display:none"
+    <input type="file" id="file-input" multiple style="display:none"
            accept="image/png,image/jpeg,image/webp,image/gif,application/pdf,text/*,.md,.csv,.json,.js,.ts,.py,.html,.css,.xml,.yml,.yaml,.docx,.xlsx,.xls,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel">
   </div>
 
@@ -1344,13 +1341,14 @@ questionEl.addEventListener('keydown', (e) => {
 function checkReady() {
   const hasKey = apiKeyInput.value.trim().length > 10;
   const hasQ   = questionEl.value.trim().length > 2;
-  submitBtn.disabled = !(hasKey && (hasQ || !!attachedFile));
+  submitBtn.disabled = !(hasKey && (hasQ || attachedFiles.length > 0));
 }
 
-// ── Attached file (image / PDF / text) ────────────────
-let attachedFile = null;   // {name, kind:'image'|'pdf'|'text', mediaType?, data?, text?}
+// ── Attached files (image / PDF / text / Word / Excel) ─
+let attachedFiles = [];    // [{name, kind:'image'|'pdf'|'text', mediaType?, data?, text?}]
 const fileInput = document.getElementById('file-input');
-const MAX_FILE_BYTES = 5 * 1024 * 1024;   // 5 MB
+const MAX_FILE_BYTES = 5 * 1024 * 1024;   // 5 MB per file
+const MAX_FILES = 10;
 
 fileInput.addEventListener('change', handleFileSelect);
 
@@ -1404,82 +1402,99 @@ async function extractXlsx(file) {
 }
 
 async function handleFileSelect(e) {
-  const f = e.target.files && e.target.files[0];
-  if (!f) return;
-  if (f.size > MAX_FILE_BYTES) {
-    showError('Fichier trop volumineux (max 5 Mo).');
-    fileInput.value = '';
-    return;
-  }
+  const files = [...(e.target.files || [])];
+  if (!files.length) return;
   errorBox.style.display = 'none';
-  const ext = (f.name.split('.').pop() || '').toLowerCase();
-  try {
-    if (f.type && f.type.startsWith('image/')) {
-      attachedFile = { name: f.name, kind: 'image', mediaType: f.type, data: await fileToBase64(f) };
-    } else if (f.type === 'application/pdf' || ext === 'pdf') {
-      attachedFile = { name: f.name, kind: 'pdf', mediaType: 'application/pdf', data: await fileToBase64(f) };
-    } else if (ext === 'docx') {
-      showFileLoading(f.name);
-      attachedFile = { name: f.name, kind: 'text', text: await extractDocx(f) };
-    } else if (ext === 'xlsx' || ext === 'xls') {
-      showFileLoading(f.name);
-      attachedFile = { name: f.name, kind: 'text', text: await extractXlsx(f) };
-    } else if (ext === 'doc') {
-      showError('Les anciens fichiers .doc ne sont pas lisibles ici — enregistrez-le en .docx.');
-      fileInput.value = ''; return;
-    } else {
-      attachedFile = { name: f.name, kind: 'text', text: await f.text() };
+  const needsExtract = files.some(f => /\.(docx|xlsx|xls)$/i.test(f.name));
+  if (needsExtract) renderFileChips(true);   // show a "⏳ Lecture…" row while parsing
+
+  for (const f of files) {
+    if (attachedFiles.length >= MAX_FILES) { showError('Maximum ' + MAX_FILES + ' fichiers.'); break; }
+    if (f.size > MAX_FILE_BYTES) { showError('« ' + f.name + ' » dépasse 5 Mo — ignoré.'); continue; }
+    const ext = (f.name.split('.').pop() || '').toLowerCase();
+    try {
+      let entry;
+      if (f.type && f.type.startsWith('image/')) {
+        entry = { name: f.name, kind: 'image', mediaType: f.type, data: await fileToBase64(f) };
+      } else if (f.type === 'application/pdf' || ext === 'pdf') {
+        entry = { name: f.name, kind: 'pdf', mediaType: 'application/pdf', data: await fileToBase64(f) };
+      } else if (ext === 'docx') {
+        entry = { name: f.name, kind: 'text', text: await extractDocx(f) };
+      } else if (ext === 'xlsx' || ext === 'xls') {
+        entry = { name: f.name, kind: 'text', text: await extractXlsx(f) };
+      } else if (ext === 'doc') {
+        showError('« ' + f.name + ' » : les anciens .doc ne sont pas lisibles — enregistrez en .docx.');
+        continue;
+      } else {
+        entry = { name: f.name, kind: 'text', text: await f.text() };
+      }
+      attachedFiles.push(entry);
+    } catch (err) {
+      showError('« ' + f.name + ' » illisible : ' + (err.message || 'format non supporté'));
     }
-    showFileChip();
-    checkReady();
-  } catch (err) {
-    attachedFile = null;
-    document.getElementById('file-chip').style.display = 'none';
-    showError('Impossible de lire ce fichier : ' + (err.message || 'format non supporté'));
   }
-  fileInput.value = '';   // allow re-selecting the same file later
+  renderFileChips();
+  checkReady();
+  fileInput.value = '';   // allow re-selecting the same files later
 }
 
-function showFileLoading(name) {
-  document.getElementById('file-chip-icon').textContent = '⏳';
-  document.getElementById('file-chip-name').textContent = 'Lecture de ' + name + '…';
-  document.getElementById('file-chip').style.display = 'flex';
-}
-
-function showFileChip() {
-  const chip = document.getElementById('file-chip');
-  const ext  = (attachedFile.name.split('.').pop() || '').toLowerCase();
-  let icon = attachedFile.kind === 'image' ? '🖼️'
-    : attachedFile.kind === 'pdf' ? '📕'
+function fileIcon(f) {
+  const ext = (f.name.split('.').pop() || '').toLowerCase();
+  return f.kind === 'image' ? '🖼️'
+    : f.kind === 'pdf' ? '📕'
     : ext === 'docx' ? '📘'
     : (ext === 'xlsx' || ext === 'xls' || ext === 'csv') ? '📊'
     : '📄';
-  document.getElementById('file-chip-icon').textContent = icon;
-  document.getElementById('file-chip-name').textContent = attachedFile.name;
-  chip.style.display = 'flex';
 }
 
-function removeFile() {
-  attachedFile = null;
-  document.getElementById('file-chip').style.display = 'none';
+function renderFileChips(busy) {
+  const c = document.getElementById('file-chips');
+  c.innerHTML = '';
+  attachedFiles.forEach((f, i) => {
+    const chip = document.createElement('div');
+    chip.className = 'file-chip';
+    chip.innerHTML = `<span>${fileIcon(f)}</span><span class="fc-name">${escapeHtml(f.name)}</span>` +
+      `<button type="button" title="Retirer">✕</button>`;
+    chip.querySelector('button').onclick = () => removeFile(i);
+    c.appendChild(chip);
+  });
+  if (busy) {
+    const b = document.createElement('div');
+    b.className = 'file-chip busy';
+    b.innerHTML = `<span>⏳</span><span class="fc-name">Lecture des fichiers…</span>`;
+    c.appendChild(b);
+  }
+  c.style.display = (attachedFiles.length || busy) ? 'flex' : 'none';
+}
+
+function removeFile(i) {
+  attachedFiles.splice(i, 1);
+  renderFileChips();
   fileInput.value = '';
   checkReady();
 }
 
-// Build the API "content" for the first user message (string, or blocks if a file is attached)
+function clearFiles() {
+  attachedFiles = [];
+  renderFileChips();
+  fileInput.value = '';
+}
+
+// Build the API "content" for the first user message (string, or blocks if files are attached)
 function buildUserContent(question) {
-  if (!attachedFile) return question;
+  if (!attachedFiles.length) return question;
   const blocks = [];
-  if (attachedFile.kind === 'image') {
-    blocks.push({ type: 'image', source: { type: 'base64', media_type: attachedFile.mediaType, data: attachedFile.data } });
-  } else if (attachedFile.kind === 'pdf') {
-    blocks.push({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: attachedFile.data } });
+  let preamble = '';
+  for (const f of attachedFiles) {
+    if (f.kind === 'image') {
+      blocks.push({ type: 'image', source: { type: 'base64', media_type: f.mediaType, data: f.data } });
+    } else if (f.kind === 'pdf') {
+      blocks.push({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: f.data } });
+    } else if (f.kind === 'text') {
+      preamble += `Fichier joint « ${f.name} » :\n\n${f.text}\n\n---\n\n`;
+    }
   }
-  let q = question;
-  if (attachedFile.kind === 'text') {
-    q = `Fichier joint « ${attachedFile.name} » :\n\n${attachedFile.text}\n\n---\n\n${question}`;
-  }
-  blocks.push({ type: 'text', text: q });
+  blocks.push({ type: 'text', text: preamble + question });
   return blocks;
 }
 
@@ -1904,7 +1919,7 @@ function resetApp() {
   if (currentAbort) { currentAbort.abort(); currentAbort = null; }
   setGenerating(false);
   resetPromptCard();
-  removeFile();
+  clearFiles();
   currentSessionId = null;
   localStorage.removeItem(SESSION_KEY);   // history (craftik_history) is kept
   restoreBanner.style.display = 'none';
@@ -2004,7 +2019,8 @@ submitBtn.addEventListener('click', handleSubmit);
 
 function handleSubmit() {
   let question = questionEl.value.trim();
-  if (!question && attachedFile) question = 'Analyse le fichier joint : ' + attachedFile.name;
+  if (!question && attachedFiles.length)
+    question = 'Analyse les fichiers joints : ' + attachedFiles.map(f => f.name).join(', ');
   runCraftik(question);
 }
 
@@ -2064,7 +2080,7 @@ async function runCraftik(question) {
     followupZone.style.display = '';
     renderResult(parsed);
     saveSession();
-    removeFile();   // clear the attachment from the input (it's kept in the conversation context)
+    clearFiles();   // clear the attachments from the input (kept in the conversation context)
 
   } catch (err) {
     if (err.name === 'AbortError') {
